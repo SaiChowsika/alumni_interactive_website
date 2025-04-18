@@ -95,7 +95,7 @@ const ProfileIcon = () => {
           </Link>
           <button
             onClick={handleLogout}
-            className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-600 hover:rounded-md"
+            className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-600 hover:rounded-md hover:cursor-pointer"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

@@ -99,7 +99,7 @@ const NotificationIcon = () => {
     <div className="relative" ref={notificationDropdownRef}>
       <button
         onClick={() => setShowDropdown(!showDropdown)}
-        className="relative p-2 text-gray-600 hover:text-gray-900 focus:outline-none"
+        className="relative p-2 text-gray-600 hover:text-gray-900 focus:outline-none hover:cursor-pointer"
       >
         <svg
           className="h-6 w-6"

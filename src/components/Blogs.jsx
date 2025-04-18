@@ -17,7 +17,7 @@ const Blogs = () => {
             <h3 className="text-lg font-bold text-white">Ongoing Sessions</h3>
             <Link
               className="btn gap-x-2 bg-indigo-400 text-white border-indigo-600 disabled:opacity-50 disabled:pointer-events-none hover:bg-indigo-800 hover:border-indigo-800 active:bg-indigo-800 active:border-indigo-800 focus:outline-none focus:ring-4 focus:ring-indigo-300 inline-block px-4 py-2 rounded-md transition-all duration-300"
-              to="/sessions#ongoing" // Add hash fragment
+              to="/sessions#ongoing-sessions"
             >
               View More
             </Link>
@@ -35,7 +35,7 @@ const Blogs = () => {
             <h3 className="text-lg font-bold text-white">Upcoming Sessions</h3>
             <Link
               className="btn gap-x-2 bg-indigo-400 text-white border-indigo-600 disabled:opacity-50 disabled:pointer-events-none hover:bg-indigo-800 hover:border-indigo-800 active:bg-indigo-800 active:border-indigo-800 focus:outline-none focus:ring-4 focus:ring-indigo-300 inline-block px-4 py-2 rounded-md transition-all duration-300"
-              to="/sessions#upcoming" // Add hash fragment
+              to="/sessions#upcoming-sessions"
             >
               View More
             </Link>
@@ -53,7 +53,7 @@ const Blogs = () => {
             <h3 className="text-lg font-bold text-white">Previous Sessions</h3>
             <Link
               className="btn gap-x-2 bg-indigo-400 text-white border-indigo-600 disabled:opacity-50 disabled:pointer-events-none hover:bg-indigo-800 hover:border-indigo-800 active:bg-indigo-800 active:border-indigo-800 focus:outline-none focus:ring-4 focus:ring-indigo-300 inline-block px-4 py-2 rounded-md transition-all duration-300"
-              to="/sessions#previous" // Add hash fragment
+              to="/sessions#previous-sessions"
             >
               View More
             </Link>

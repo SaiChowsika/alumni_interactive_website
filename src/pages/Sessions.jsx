@@ -181,16 +181,18 @@ const Sessions = () => {
   useEffect(() => {
     const hash = window.location.hash;
     if (hash) {
+      // Small delay to ensure the DOM is ready
       setTimeout(() => {
         const element = document.querySelector(hash);
         if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       }, 100);
     } else {
+      // Only scroll to top if there's no hash (coming from navbar)
       window.scrollTo(0, 0);
     }
-  }, []);
+  }, [window.location.hash]); // React to hash changes
 
   if (loading) {
     return (

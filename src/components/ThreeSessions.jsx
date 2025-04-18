@@ -13,12 +13,10 @@ const ThreeSessions = ({ sessions, type, isAdmin, onDelete, onCancel, sectionId 
     setShowAll(!showAll);
     if (!showAll) {
       // If we're showing more sessions, scroll to the section
-      setTimeout(() => {
-        const element = document.getElementById(sectionId);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 100);
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
   };
 
@@ -50,7 +48,7 @@ const ThreeSessions = ({ sessions, type, isAdmin, onDelete, onCancel, sectionId 
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-blue-800">
-                      {session.conductedBy?.fullName || 'TBA'}
+                      {session.conductedBy?.fullName || session.conductedBy || 'TBA'}
                     </h3>
                     <p className="text-blue-600 text-sm">Session Head</p>
                   </div>
@@ -113,7 +111,7 @@ const ThreeSessions = ({ sessions, type, isAdmin, onDelete, onCancel, sectionId 
         <div className="mt-8 text-center">
           <button
             onClick={handleViewMore}
-            className="bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-2 px-6 rounded-full transition-colors duration-300 border border-blue-200"
+            className="bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-2 px-6 rounded-full transition-colors duration-300 border border-blue-200 cursor-pointer hover:scale-105"
           >
             {showAll ? 'Show Less' : 'View More'}
           </button>
