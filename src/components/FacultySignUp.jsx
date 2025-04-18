@@ -69,6 +69,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import ModernSuccessAlert from './ModernSuccessAlert';
 import { authService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { validateFacultyData } from '../services/validationService';
 
 const FacultySignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -96,12 +97,22 @@ const FacultySignUp = () => {
       // Check if all fields are filled
       if (!fullName || !facultyID || !email || !password || !confirmPassword || !phone) {
         setError('Please fill in all fields.');
+        setIsLoading(false);
         return;
       }
 
       // Check if passwords match
       if (password !== confirmPassword) {
         setError('Password and confirm password do not match.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Validate faculty email against dummy data
+      const validation = await validateFacultyData(email);
+      if (!validation.isValid) {
+        setError(validation.error);
+        setIsLoading(false);
         return;
       }
 

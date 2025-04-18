@@ -85,6 +85,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/sessions', require('./routes/sessions'));
 app.use('/api/statistics', require('./routes/statistics'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/placements', require('./routes/placements'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

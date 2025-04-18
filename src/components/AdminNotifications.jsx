@@ -33,13 +33,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { sessionService } from '../services/api';
+import axios from 'axios';
 
 const AdminNotifications = () => {
   const [notifications, setNotifications] = useState([]);
-  const [selectedSession, setSelectedSession] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState('');
+  const [loading, setLoading] = useState(true);
+  const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
   useEffect(() => {
     fetchNotifications();
@@ -47,147 +46,109 @@ const AdminNotifications = () => {
 
   const fetchNotifications = async () => {
     try {
-      const response = await sessionService.getPendingSessions();
-      setNotifications(response.data.sessions);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_BASE_URL}/api/admin/notifications`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotifications(response.data.notifications);
     } catch (error) {
       console.error('Error fetching notifications:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSessionClick = (session) => {
-    setSelectedSession(session);
-    setShowModal(true);
-  };
-
-  const handleApprove = async () => {
+  const handleAction = async (notificationId, action) => {
     try {
-      await sessionService.updateSessionStatus(selectedSession._id, 'approved');
-      // Send email notification to the session requester
-      await sessionService.sendSessionStatusEmail(selectedSession._id, 'approved');
-      setShowModal(false);
+      const token = localStorage.getItem('token');
+      await axios.post(`${API_BASE_URL}/api/admin/notifications/${notificationId}/${action}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Refresh notifications
       fetchNotifications();
+
+      // Show success message (you can implement a toast/alert system)
+      console.log(`Successfully ${action}ed submission`);
     } catch (error) {
-      console.error('Error approving session:', error);
+      console.error(`Error ${action}ing submission:`, error);
     }
   };
 
-  const handleReject = async () => {
-    if (!rejectionReason) {
-      alert('Please provide a reason for rejection');
-      return;
-    }
-
-    try {
-      await sessionService.updateSessionStatus(selectedSession._id, 'rejected', rejectionReason);
-      // Send email notification to the session requester
-      await sessionService.sendSessionStatusEmail(selectedSession._id, 'rejected', rejectionReason);
-      setShowModal(false);
-      setRejectionReason('');
-      fetchNotifications();
-    } catch (error) {
-      console.error('Error rejecting session:', error);
-    }
-  };
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-bold mb-4">Session Requests</h2>
+    <div className="max-w-4xl mx-auto p-4">
+      <h2 className="text-2xl font-semibold text-gray-800 mb-6">Placement Submissions</h2>
       
-      {/* Notifications List */}
       <div className="space-y-4">
-        {notifications.map((notification) => (
-          <div
-            key={notification._id}
-            className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => handleSessionClick(notification)}
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="font-semibold text-lg">{notification.sessionTitle}</h3>
-                <p className="text-gray-600">By: {notification.fullName}</p>
-                <p className="text-sm text-gray-500">
-                  {notification.userType === 'alumni' ? 'Alumni' : 'Faculty'} - 
-                  {notification.userType === 'alumni' ? ` Graduated: ${notification.graduationYear}` : ` Department: ${notification.department}`}
-                </p>
+        {notifications.length > 0 ? (
+          notifications.map((notification) => (
+            <div
+              key={notification.id}
+              className="bg-white rounded-lg shadow-md p-6 transition-all hover:shadow-lg"
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    {notification.studentName} - {notification.branch} ({notification.year})
+                  </h3>
+                  <p className="text-gray-600 mt-1">
+                    Company: <span className="font-medium">{notification.company}</span>
+                  </p>
+                  <p className="text-gray-600">
+                    Position: <span className="font-medium">{notification.position}</span>
+                  </p>
+                  <p className="text-gray-600">
+                    Package: <span className="font-medium">{notification.package} LPA</span>
+                  </p>
+                  <p className="text-gray-600">
+                    Location: <span className="font-medium">{notification.location}</span>
+                  </p>
+                  <p className="text-gray-600">
+                    Joining Date: <span className="font-medium">
+                      {new Date(notification.joiningDate).toLocaleDateString()}
+                    </span>
+                  </p>
+                  {notification.additionalInfo && (
+                    <p className="text-gray-600 mt-2">
+                      Additional Info: <span className="font-medium">{notification.additionalInfo}</span>
+                    </p>
+                  )}
+                  <p className="text-sm text-gray-500 mt-2">
+                    Submitted on: {new Date(notification.submittedAt).toLocaleString()}
+                  </p>
+                </div>
+
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleAction(notification.id, 'accept')}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    onClick={() => handleAction(notification.id, 'reject')}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Reject
+                  </button>
+                </div>
               </div>
-              <span className="px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-800">
-                Pending
-              </span>
             </div>
+          ))
+        ) : (
+          <div className="text-center text-gray-500 py-8">
+            No pending submissions to review
           </div>
-        ))}
+        )}
       </div>
-
-      {/* Session Details Modal */}
-      {showModal && selectedSession && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full p-6">
-            <h3 className="text-xl font-bold mb-4">{selectedSession.sessionTitle}</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-semibold">Session Details</h4>
-                <p className="text-gray-600">{selectedSession.sessionDescription}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-semibold">Session Type</h4>
-                  <p className="text-gray-600">{selectedSession.sessionType}</p>
-                </div>
-                <div>
-                  <h4 className="font-semibold">Target Audience</h4>
-                  <p className="text-gray-600">{selectedSession.targetAudience}</p>
-                </div>
-                <div>
-                  <h4 className="font-semibold">Preferred Date</h4>
-                  <p className="text-gray-600">{selectedSession.preferredDate}</p>
-                </div>
-                <div>
-                  <h4 className="font-semibold">Preferred Time</h4>
-                  <p className="text-gray-600">{selectedSession.preferredTime}</p>
-                </div>
-                <div>
-                  <h4 className="font-semibold">Session Mode</h4>
-                  <p className="text-gray-600">{selectedSession.sessionMode}</p>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="font-semibold">Rejection Reason (if rejecting)</h4>
-                <textarea
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  className="w-full p-2 border rounded-md"
-                  rows="3"
-                  placeholder="Enter reason for rejection..."
-                />
-              </div>
-
-              <div className="flex justify-end space-x-4 mt-6">
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleReject}
-                  className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                >
-                  Reject
-                </button>
-                <button
-                  onClick={handleApprove}
-                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-                >
-                  Approve
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

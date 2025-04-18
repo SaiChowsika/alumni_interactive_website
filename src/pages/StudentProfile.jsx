@@ -5,7 +5,7 @@ import Profile from '../components/Profile';
 
 const StudentProfile = () => {
   const studentData = {
-    profileImage: 'src/assets/vinay.jpg',
+    profileImage: 'src/assets/profile1.jpg',
     fullName: 'Vinay Repalle',
     username: 'vinayrepalle',
     id: 'N201234',

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import ModernSuccessAlert from './ModernSuccessAlert'; // Adjust the import path as necessary
 import { authService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { validateAdminData } from '../services/validationService';
 
 const AdminSignUp = () => {
   // State to manage password visibility
@@ -38,12 +39,22 @@ const AdminSignUp = () => {
       // Check if all fields are filled
       if (!fullName || !designation || !email || !password || !confirmPassword || !phone) {
         setError('Please fill in all fields.');
+        setIsLoading(false);
         return;
       }
 
       // Check if passwords match
       if (password !== confirmPassword) {
         setError('Password and confirm password do not match.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Validate admin email against dummy data
+      const validation = await validateAdminData(email);
+      if (!validation.isValid) {
+        setError(validation.error);
+        setIsLoading(false);
         return;
       }
 

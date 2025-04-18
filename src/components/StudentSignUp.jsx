@@ -62,6 +62,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import ModernSuccessAlert from './ModernSuccessAlert'; // Adjust the import path as needed
 import { authService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { validateStudentData } from '../services/validationService';
 
 const StudentSignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -117,6 +118,14 @@ const StudentSignUp = () => {
         return;
       }
 
+      // Validate student data against dummy data
+      const validation = await validateStudentData(email, studentID);
+      if (!validation.isValid) {
+        setError(validation.error);
+        setIsLoading(false);
+        return;
+      }
+
       // Prepare user data
       const userData = {
         fullName,
@@ -126,7 +135,8 @@ const StudentSignUp = () => {
         studentId: studentID,
         phoneNumber,
         department,
-        yearOfStudy: year
+        yearOfStudy: year,
+        branch: validation.data.Branch // Add branch from dummy data
       };
 
       // Call API to store user data

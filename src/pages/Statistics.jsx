@@ -85,10 +85,16 @@ const Statistics = () => {
       byRole: {
         students: 0,
         alumni: 0,
-        faculty: 0
+        faculty: 0,
+        admin: 0
       },
       studentsByBranch: {},
-      studentsByYear: {},
+      studentsByYear: {
+        E1: { CSE: 0, ECE: 0, EEE: 0, MECH: 0, CIVIL: 0, CHEM: 0, MME: 0 },
+        E2: { CSE: 0, ECE: 0, EEE: 0, MECH: 0, CIVIL: 0, CHEM: 0, MME: 0 },
+        E3: { CSE: 0, ECE: 0, EEE: 0, MECH: 0, CIVIL: 0, CHEM: 0, MME: 0 },
+        E4: { CSE: 0, ECE: 0, EEE: 0, MECH: 0, CIVIL: 0, CHEM: 0, MME: 0 }
+      },
       alumniByYear: {},
       alumniByBranch: {}
     },
@@ -116,6 +122,11 @@ const Statistics = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // New state for alumni data
+  const [alumniData, setAlumniData] = useState([]);
+  const [selectedAlumniBranch, setSelectedAlumniBranch] = useState('ALL');
+  const [selectedAlumniYear, setSelectedAlumniYear] = useState('ALL');
+
   const branches = ['ALL', 'CSE', 'ECE', 'EEE', 'CIVIL', 'MECH', 'CHEM', 'MME'];
   const years = ['ALL', 'E1', 'E2', 'E3', 'E4'];
 
@@ -138,6 +149,28 @@ const Statistics = () => {
     } catch (error) {
       console.error('Error fetching student data:', error);
       setError(error.response?.data?.message || 'Failed to fetch student data');
+    }
+  };
+
+  // Fetch alumni data based on filters
+  const fetchAlumniData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_BASE_URL}/api/statistics/alumni`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        params: {
+          branch: selectedAlumniBranch,
+          year: selectedAlumniYear
+        }
+      });
+
+      setAlumniData(response.data.data.alumni);
+    } catch (error) {
+      console.error('Error fetching alumni data:', error);
+      setError(error.response?.data?.message || 'Failed to fetch alumni data');
     }
   };
 
@@ -189,12 +222,18 @@ const Statistics = () => {
 
     fetchStatistics();
     fetchStudentData();
+    fetchAlumniData();
   }, [user, navigate]);
 
   // Fetch student data when filters change
   useEffect(() => {
     fetchStudentData();
   }, [selectedBranch, selectedYear]);
+
+  // Fetch alumni data when filters change
+  useEffect(() => {
+    fetchAlumniData();
+  }, [selectedAlumniBranch, selectedAlumniYear]);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -214,131 +253,208 @@ const Statistics = () => {
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <h2 className="text-2xl font-semibold text-gray-800 mb-6">User Statistics</h2>
           
-          {/* Total Users */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-blue-50 p-4 rounded-lg">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div className="bg-blue-50 p-6 rounded-lg">
               <h3 className="text-lg font-semibold text-blue-800">Total Users</h3>
               <p className="text-3xl font-bold text-blue-600">{stats.users?.total || '0'}</p>
             </div>
-            <div className="bg-green-50 p-4 rounded-lg">
+            <div className="bg-green-50 p-6 rounded-lg">
               <h3 className="text-lg font-semibold text-green-800">Students</h3>
               <p className="text-3xl font-bold text-green-600">{stats.users?.byRole?.students || '0'}</p>
             </div>
-            <div className="bg-purple-50 p-4 rounded-lg">
+            <div className="bg-purple-50 p-6 rounded-lg">
               <h3 className="text-lg font-semibold text-purple-800">Alumni</h3>
               <p className="text-3xl font-bold text-purple-600">{stats.users?.byRole?.alumni || '0'}</p>
             </div>
-            <div className="bg-orange-50 p-4 rounded-lg">
-              <h3 className="text-lg font-semibold text-orange-800">Faculty</h3>
-              <p className="text-3xl font-bold text-orange-600">{stats.users?.byRole?.faculty || '0'}</p>
+            <div className="bg-yellow-50 p-6 rounded-lg">
+              <h3 className="text-lg font-semibold text-yellow-800">Faculty</h3>
+              <p className="text-3xl font-bold text-yellow-600">{stats.users?.byRole?.faculty || '0'}</p>
+            </div>
+            <div className="bg-red-50 p-6 rounded-lg">
+              <h3 className="text-lg font-semibold text-red-800">Admins</h3>
+              <p className="text-3xl font-bold text-red-600">{stats.users?.byRole?.admin || '0'}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Student Year-wise Statistics */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6">Student Year-wise Statistics</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {['E1', 'E2', 'E3', 'E4'].map((year) => (
+              <div key={year} className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">{year}</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {['CSE', 'ECE', 'EEE', 'MECH', 'CIVIL', 'CHEM', 'MME'].map((branch) => (
+                    <div key={`${year}-${branch}`} className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-gray-700">{branch}</h4>
+                      <p className="text-2xl font-bold text-blue-600">
+                        {stats.users?.studentsByYear?.[year]?.[branch] || '0'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Student Data Section with existing table */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6">Student Data</h2>
+          
+          {/* Filters */}
+          <div className="flex gap-4 mb-6">
+            <div className="w-48">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Branch</label>
+              <select
+                value={selectedBranch}
+                onChange={(e) => setSelectedBranch(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              >
+                {branches.map(branch => (
+                  <option key={branch} value={branch}>{branch}</option>
+                ))}
+              </select>
+            </div>
+            <div className="w-48">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              >
+                {years.map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
             </div>
           </div>
 
-          {/* Student Data Section */}
-          <div className="mb-8">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Student Data</h3>
-            
-            {/* Filters */}
-            <div className="flex gap-4 mb-6">
-              <div className="w-48">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Branch</label>
-                <select
-                  value={selectedBranch}
-                  onChange={(e) => setSelectedBranch(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                >
-                  {branches.map(branch => (
-                    <option key={branch} value={branch}>{branch}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="w-48">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                >
-                  {years.map(year => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Student Table */}
-            <div className="overflow-x-auto bg-gray-50 rounded-lg">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {studentData.length > 0 ? (
-                    studentData.map((student) => (
-                      <tr key={student.studentId} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.studentId}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.fullName}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.email}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.branch}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.year}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.phone}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
-                        No students found
-                      </td>
+          {/* Student Table */}
+          <div className="overflow-x-auto bg-gray-50 rounded-lg">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {studentData.length > 0 ? (
+                  studentData.map((student) => (
+                    <tr key={student.studentId} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.studentId}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.fullName}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.branch}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.year}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.phone}</td>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                      No students found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Alumni Year-wise Statistics */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6">Alumni Year-wise Statistics</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {Array.from({ length: new Date().getFullYear() - 2013 }, (_, i) => 2014 + i).map((year) => (
+              <div key={year} className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">Batch {year}</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {['CSE', 'ECE', 'EEE', 'MECH', 'CIVIL', 'CHEM', 'MME'].map((branch) => (
+                    <div key={`${year}-${branch}`} className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-gray-700">{branch}</h4>
+                      <p className="text-2xl font-bold text-purple-600">
+                        {stats.users?.alumniByYear?.[year]?.[branch] || '0'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Alumni Data Table */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6">Alumni Data</h2>
+          
+          {/* Alumni Filters */}
+          <div className="flex gap-4 mb-6">
+            <div className="w-48">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Branch</label>
+              <select
+                value={selectedAlumniBranch}
+                onChange={(e) => setSelectedAlumniBranch(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              >
+                {branches.map(branch => (
+                  <option key={branch} value={branch}>{branch}</option>
+                ))}
+              </select>
+            </div>
+            <div className="w-48">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
+              <select
+                value={selectedAlumniYear}
+                onChange={(e) => setSelectedAlumniYear(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="ALL">All Years</option>
+                {Array.from({ length: new Date().getFullYear() - 2013 }, (_, i) => (
+                  <option key={2014 + i} value={2014 + i}>{2014 + i}</option>
+                ))}
+              </select>
             </div>
           </div>
 
-          {/* Alumni by Year */}
-          <div className="mb-8">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Alumni by Year</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {Object.entries(stats.users?.alumniByYear || {}).length > 0 ? (
-                Object.entries(stats.users.alumniByYear).map(([year, count]) => (
-                  <div key={year} className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-semibold text-gray-700">{year || 'Unknown'}</h4>
-                    <p className="text-2xl font-bold text-gray-600">{count}</p>
-                  </div>
-                ))
-              ) : (
-                <div className="col-span-full p-4 text-center text-gray-500 bg-gray-50 rounded-lg">
-                  No alumni year data available
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Alumni by Branch */}
-          <div className="mb-8">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Alumni by Branch</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {Object.entries(stats.users?.alumniByBranch || {}).length > 0 ? (
-                Object.entries(stats.users.alumniByBranch).map(([branch, count]) => (
-                  <div key={branch} className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-semibold text-gray-700">{branch || 'Unknown'}</h4>
-                    <p className="text-2xl font-bold text-gray-600">{count}</p>
-                  </div>
-                ))
-              ) : (
-                <div className="col-span-full p-4 text-center text-gray-500 bg-gray-50 rounded-lg">
-                  No alumni branch data available
-                </div>
-              )}
-            </div>
+          {/* Alumni Table */}
+          <div className="overflow-x-auto bg-gray-50 rounded-lg">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year of Graduation</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {alumniData.length > 0 ? (
+                  alumniData.map((alumni) => (
+                    <tr key={alumni.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{alumni.id}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{alumni.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{alumni.department}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{alumni.graduationYear}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{alumni.phone}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                      No alumni found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
