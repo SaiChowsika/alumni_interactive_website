@@ -98,20 +98,73 @@ exports.createSession = async (req, res) => {
 exports.getAllSessions = async (req, res) => {
   try {
     const sessions = await Session.find()
-      .populate('conductedBy', 'fullName email')
+      .populate('sessionHead', 'fullName email profilePhoto')
       .populate('participants', 'fullName email');
+
+    // Get current date and time
+    const now = new Date();
+
+    // Process and categorize sessions
+    const processedSessions = sessions.map(session => {
+      const sessionDate = new Date(session.date);
+      const sessionTime = (session.time || '00:00').split(':');
+      sessionDate.setHours(parseInt(sessionTime[0]), parseInt(sessionTime[1]));
+
+      // Check if session is today
+      const isToday = sessionDate.toDateString() === now.toDateString();
+      
+      // Determine session status
+      let status;
+      
+      if (isToday) {
+        const currentTime = now.getHours() * 60 + now.getMinutes();
+        const sessionStartTime = parseInt(sessionTime[0]) * 60 + parseInt(sessionTime[1]);
+        const sessionEndTime = sessionStartTime + 120; // 2 hours in minutes
+
+        if (currentTime >= sessionStartTime && currentTime <= sessionEndTime) {
+          status = 'ongoing';
+        } else if (currentTime < sessionStartTime) {
+          status = 'upcoming';
+        } else {
+          status = 'completed';
+        }
+      } else if (sessionDate > now) {
+        status = 'upcoming';
+      } else {
+        status = 'completed';
+      }
+
+      // Update session status in database if it has changed
+      if (session.status !== status) {
+        Session.findByIdAndUpdate(session._id, { status }, { new: true }).exec();
+      }
+
+      return {
+        ...session.toObject(),
+        status
+      };
+    });
+
+    // Calculate statistics
+    const stats = {
+      total: processedSessions.length,
+      ongoing: processedSessions.filter(s => s.status === 'ongoing').length,
+      upcoming: processedSessions.filter(s => s.status === 'upcoming').length,
+      previous: processedSessions.filter(s => s.status === 'completed').length
+    };
 
     res.status(200).json({
       status: 'success',
-      results: sessions.length,
       data: {
-        sessions
+        sessions: processedSessions,
+        stats
       }
     });
   } catch (error) {
-    res.status(400).json({
+    console.error('Error in getAllSessions:', error);
+    res.status(500).json({
       status: 'error',
-      message: error.message
+      message: error.message || 'Error fetching sessions'
     });
   }
 };
@@ -245,10 +298,42 @@ exports.joinSession = async (req, res) => {
 
 exports.getSessionStats = async (req, res) => {
   try {
-    const totalSessions = await Session.countDocuments();
-    const completedSessions = await Session.countDocuments({ status: 'completed' });
-    const upcomingSessions = await Session.countDocuments({ status: 'approved' });
-    const ongoingSessions = await Session.countDocuments({ status: 'ongoing' });
+    const sessions = await Session.find();
+    const now = new Date();
+
+    // Initialize counters
+    let totalSessions = sessions.length;
+    let completedSessions = 0;
+    let upcomingSessions = 0;
+    let ongoingSessions = 0;
+
+    // Categorize each session based on date and time
+    sessions.forEach(session => {
+      const sessionDate = new Date(session.date);
+      const sessionTime = (session.time || '00:00').split(':');
+      sessionDate.setHours(parseInt(sessionTime[0]), parseInt(sessionTime[1]));
+
+      // Check if session is today
+      const isToday = sessionDate.toDateString() === now.toDateString();
+      
+      if (isToday) {
+        const currentTime = now.getHours() * 60 + now.getMinutes();
+        const sessionStartTime = parseInt(sessionTime[0]) * 60 + parseInt(sessionTime[1]);
+        const sessionEndTime = sessionStartTime + 120; // 2 hours in minutes
+
+        if (currentTime >= sessionStartTime && currentTime <= sessionEndTime) {
+          ongoingSessions++;
+        } else if (currentTime < sessionStartTime) {
+          upcomingSessions++;
+        } else {
+          completedSessions++;
+        }
+      } else if (sessionDate > now) {
+        upcomingSessions++;
+      } else {
+        completedSessions++;
+      }
+    });
 
     res.status(200).json({
       status: 'success',
@@ -260,9 +345,9 @@ exports.getSessionStats = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(400).json({
+    res.status(500).json({
       status: 'error',
-      message: error.message
+      message: error.message || 'Error fetching session statistics'
     });
   }
 }; 

@@ -116,7 +116,7 @@ const FacultySignUp = () => {
       };
 
       // Call API to store user data
-      const response = await signup(userData);
+      const response = await authService.signup(userData);
       
       // Store token and user data
       localStorage.setItem('token', response.token);

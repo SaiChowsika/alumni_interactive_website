@@ -126,32 +126,14 @@ const LandingPageNavbar = () => {
             </div>
           </div>
 
-          {/* Sign Up Button with Dropdown */}
+          {/* Sign In Button */}
           <div className="flex items-center justify-end relative" ref={signUpDropdownRef}>
-            <button
-              onClick={() => {
-                if (isSignUpDropdownOpen) {
-                  closeAllDropdowns();
-                } else {
-                  openDropdown('signup');
-                }
-              }}
+            <Link
+              to="/signin"
               className="items-center justify-center border align-middle select-none font-sans font-medium text-center duration-300 ease-in text-sm py-1.5 px-3 shadow-sm hover:shadow bg-black hover:bg-gray-700 text-white rounded-lg transition cursor-pointer"
             >
-              Sign Up
-            </button>
-
-            {/* Dropdown Menu */}
-            {isSignUpDropdownOpen && (
-              <div className="absolute top-full right-0 mt-2 w-48 bg-slate-800 rounded-md shadow-md z-30">
-                <div className="flex flex-col space-y-2 p-2">
-                  <Link to="/studentsignup" className="text-white hover:text-blue-600   cursor-pointer">Student</Link>
-                  <Link to="/alumnisignup" className="text-white hover:text-blue-600  cursor-pointer">Alumni</Link>
-                  <Link to="/facultysignup" className="text-white hover:text-blue-600  cursor-pointer">Faculty</Link>
-                  <Link to="/adminsignup" className="text-white hover:text-blue-600  cursor-pointer">Admin</Link>
-                </div>
-              </div>
-            )}
+              Sign In
+            </Link>
           </div>
         </div>
 

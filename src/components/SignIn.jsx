@@ -125,9 +125,22 @@ const SignIn = () => {
         login(response.data.user);
         
         setShowAlert(true);
+
+        // Get the role-specific dashboard route
+        const dashboardRoutes = {
+          admin: '/admin',
+          student: '/student',
+          alumni: '/alumni',
+          faculty: '/faculty'
+        };
+
+        // If coming from a specific protected route (not landing page), use that route
+        // Otherwise, use the role-specific dashboard
+        const targetRoute = from === '/' ? dashboardRoutes[response.data.user.role] : from;
+        
         // Redirect after successful login
         setTimeout(() => {
-          navigate(from);
+          navigate(targetRoute);
         }, 1500);
       } else {
         setError('Invalid response from server');
@@ -288,10 +301,10 @@ const SignIn = () => {
           </p>
           <p className="mt-2 text-sm text-gray-600">
             Don't have an account?{' '}
-          <Link to="/" className="text-purple-700 hover:text-purple-900">
-            Sign up
-          </Link>
-        </p>
+            <Link to="/select-role" className="text-purple-700 hover:text-purple-900">
+              Sign up
+            </Link>
+          </p>
         </div>
       </div>
 

@@ -96,8 +96,7 @@ const Statistics = () => {
       total: 0,
       upcoming: 0,
       ongoing: 0,
-      previous: 0,
-      rejected: []
+      completed: 0
     },
     placements: {
       total: 0,
@@ -109,8 +108,38 @@ const Statistics = () => {
     rejectedSignups: [],
     failedSignups: []
   });
+
+  // New state for student filters and data
+  const [selectedBranch, setSelectedBranch] = useState('ALL');
+  const [selectedYear, setSelectedYear] = useState('ALL');
+  const [studentData, setStudentData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const branches = ['ALL', 'CSE', 'ECE', 'EEE', 'CIVIL', 'MECH', 'CHEM', 'MME'];
+  const years = ['ALL', 'E1', 'E2', 'E3', 'E4'];
+
+  // Fetch student data based on filters
+  const fetchStudentData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_BASE_URL}/api/statistics/students`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        params: {
+          branch: selectedBranch,
+          year: selectedYear
+        }
+      });
+
+      setStudentData(response.data.data.students);
+    } catch (error) {
+      console.error('Error fetching student data:', error);
+      setError(error.response?.data?.message || 'Failed to fetch student data');
+    }
+  };
 
   useEffect(() => {
     if (!user) {
@@ -135,7 +164,6 @@ const Statistics = () => {
           return;
         }
 
-        console.log('Fetching statistics with token:', token);
         const response = await axios.get(`${API_BASE_URL}/api/statistics`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -143,23 +171,16 @@ const Statistics = () => {
           }
         });
 
-        console.log('Statistics API Response:', response.data);
-
         if (response.data && typeof response.data === 'object') {
-          console.log('Setting statistics state:', response.data);
           setStats(response.data);
         } else {
-          console.error('Invalid data format received:', response.data);
           setError('Invalid data format received from server');
         }
       } catch (error) {
-        console.error('Error fetching statistics:', error);
-        console.error('Error response:', error.response);
         setError(
           error.response?.data?.message || 
-          error.response?.data?.error || 
           error.message || 
-          'Failed to fetch statistics. Please try again later.'
+          'Failed to fetch statistics'
         );
       } finally {
         setLoading(false);
@@ -167,7 +188,13 @@ const Statistics = () => {
     };
 
     fetchStatistics();
+    fetchStudentData();
   }, [user, navigate]);
+
+  // Fetch student data when filters change
+  useEffect(() => {
+    fetchStudentData();
+  }, [selectedBranch, selectedYear]);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -201,47 +228,78 @@ const Statistics = () => {
               <h3 className="text-lg font-semibold text-purple-800">Alumni</h3>
               <p className="text-3xl font-bold text-purple-600">{stats.users?.byRole?.alumni || '0'}</p>
             </div>
-            <div className="bg-yellow-50 p-4 rounded-lg">
-              <h3 className="text-lg font-semibold text-yellow-800">Faculty</h3>
-              <p className="text-3xl font-bold text-yellow-600">{stats.users?.byRole?.faculty || '0'}</p>
+            <div className="bg-orange-50 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold text-orange-800">Faculty</h3>
+              <p className="text-3xl font-bold text-orange-600">{stats.users?.byRole?.faculty || '0'}</p>
             </div>
           </div>
 
-          {/* Students by Branch */}
+          {/* Student Data Section */}
           <div className="mb-8">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Students by Branch</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {Object.entries(stats.users?.studentsByBranch || {}).length > 0 ? (
-                Object.entries(stats.users.studentsByBranch).map(([branch, count]) => (
-                  <div key={branch} className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-semibold text-gray-700">{branch || 'Unknown'}</h4>
-                    <p className="text-2xl font-bold text-gray-600">{count}</p>
-                  </div>
-                ))
-              ) : (
-                <div className="col-span-full p-4 text-center text-gray-500 bg-gray-50 rounded-lg">
-                  No branch data available
-                </div>
-              )}
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">Student Data</h3>
+            
+            {/* Filters */}
+            <div className="flex gap-4 mb-6">
+              <div className="w-48">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Branch</label>
+                <select
+                  value={selectedBranch}
+                  onChange={(e) => setSelectedBranch(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                >
+                  {branches.map(branch => (
+                    <option key={branch} value={branch}>{branch}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="w-48">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                >
+                  {years.map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
 
-          {/* Students by Year */}
-          <div className="mb-8">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Students by Year</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {Object.entries(stats.users?.studentsByYear || {}).length > 0 ? (
-                Object.entries(stats.users.studentsByYear).map(([year, count]) => (
-                  <div key={year} className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-semibold text-gray-700">Year {year || 'Unknown'}</h4>
-                    <p className="text-2xl font-bold text-gray-600">{count}</p>
-                  </div>
-                ))
-              ) : (
-                <div className="col-span-full p-4 text-center text-gray-500 bg-gray-50 rounded-lg">
-                  No year data available
-                </div>
-              )}
+            {/* Student Table */}
+            <div className="overflow-x-auto bg-gray-50 rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {studentData.length > 0 ? (
+                    studentData.map((student) => (
+                      <tr key={student.studentId} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.studentId}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.fullName}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.email}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.branch}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.year}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.phone}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                        No students found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -288,7 +346,7 @@ const Statistics = () => {
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <h2 className="text-2xl font-semibold text-gray-800 mb-6">Session Statistics</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-blue-50 p-4 rounded-lg">
               <h3 className="text-lg font-semibold text-blue-800">Total Sessions</h3>
               <p className="text-3xl font-bold text-blue-600">{stats.sessions?.total || '0'}</p>
@@ -301,33 +359,9 @@ const Statistics = () => {
               <h3 className="text-lg font-semibold text-yellow-800">Ongoing</h3>
               <p className="text-3xl font-bold text-yellow-600">{stats.sessions?.ongoing || '0'}</p>
             </div>
-            <div className="bg-red-50 p-4 rounded-lg">
-              <h3 className="text-lg font-semibold text-red-800">Previous</h3>
-              <p className="text-3xl font-bold text-red-600">{stats.sessions?.previous || '0'}</p>
-            </div>
-          </div>
-
-          {/* Rejected Sessions */}
-          <div className="mb-8">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Rejected Sessions</h3>
-            <div className="bg-gray-50 rounded-lg p-4">
-              {stats.sessions?.rejected?.length > 0 ? (
-                <div className="space-y-2">
-                  {stats.sessions.rejected.map((session, index) => (
-                    <div key={index} className="p-3 bg-white rounded shadow-sm">
-                      <p className="text-gray-700">
-                        <span className="font-semibold">{session.title}</span>
-                        <span className="mx-2">•</span>
-                        <span>{new Date(session.date).toLocaleDateString()}</span>
-                        <span className="mx-2">•</span>
-                        <span>{session.venue}</span>
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center text-gray-500">No rejected sessions</div>
-              )}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold text-gray-800">Completed</h3>
+              <p className="text-3xl font-bold text-gray-600">{stats.sessions?.completed || '0'}</p>
             </div>
           </div>
         </div>

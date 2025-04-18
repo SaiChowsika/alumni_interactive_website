@@ -30,10 +30,12 @@ import AlumniSignUp from './components/AlumniSignUp';
 import FacultySignUp from './components/FacultySignUp';
 import AdminSignUp from './components/AdminSignUp';
 import SignIn from './components/SignIn';
+import RoleSelection from './components/RoleSelection';
 import ForgotPassword from './components/ForgotPassword';
 import ChangePassword from './components/ChangePassword';
 import SessionForm from './components/SessionForm';
 import AdminNotifications from './components/AdminNotifications';
+
 function App() {
   return (
     <AuthProvider>
@@ -45,6 +47,7 @@ function App() {
                 {/* Public Routes */}
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/signin" element={<SignIn />} />
+                <Route path="/select-role" element={<RoleSelection />} />
                 <Route path="/studentsignup" element={<StudentSignUp />} />
                 <Route path="/alumnisignup" element={<AlumniSignUp />} />
                 <Route path="/facultysignup" element={<FacultySignUp />} />
@@ -53,11 +56,27 @@ function App() {
                 <Route path="/aboutus" element={<AboutUs />} />
                 <Route path="/departments" element={<Departments />} />
                 <Route path="/placements" element={<PlacementsPage />} />
+                <Route path="/sessions" element={<Sessions />} />
 
-                {/* Protected Admin Routes */}
+                {/* Protected Routes with Role-based Access */}
                 <Route path="/admin" element={
                   <ProtectedRoute allowedRoles={['admin']}>
                     <AdminPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/student" element={
+                  <ProtectedRoute allowedRoles={['student']}>
+                    <StudentPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/alumni" element={
+                  <ProtectedRoute allowedRoles={['alumni']}>
+                    <AlumniPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/faculty" element={
+                  <ProtectedRoute allowedRoles={['faculty']}>
+                    <FacultyPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/adminprofile" element={
@@ -80,23 +99,9 @@ function App() {
                     <AdminNotifications />
                   </ProtectedRoute>
                 } />
-
-                {/* Protected Student Routes */}
-                <Route path="/student" element={
-                  <ProtectedRoute allowedRoles={['student']}>
-                    <StudentPage />
-                  </ProtectedRoute>
-                } />
                 <Route path="/studentprofile" element={
                   <ProtectedRoute allowedRoles={['student']}>
                     <StudentProfile />
-                  </ProtectedRoute>
-                } />
-
-                {/* Protected Alumni Routes */}
-                <Route path="/alumni" element={
-                  <ProtectedRoute allowedRoles={['alumni']}>
-                    <AlumniPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/alumniprofile" element={
@@ -104,23 +109,9 @@ function App() {
                     <AlumniProfile />
                   </ProtectedRoute>
                 } />
-
-                {/* Protected Faculty Routes */}
-                <Route path="/faculty" element={
-                  <ProtectedRoute allowedRoles={['faculty']}>
-                    <FacultyPage />
-                  </ProtectedRoute>
-                } />
                 <Route path="/facultyprofile" element={
                   <ProtectedRoute allowedRoles={['faculty']}>
                     <FacultyProfile />
-                  </ProtectedRoute>
-                } />
-
-                {/* Protected Multi-Role Routes */}
-                <Route path="/sessions" element={
-                  <ProtectedRoute allowedRoles={['admin', 'faculty', 'alumni', 'student']}>
-                    <Sessions />
                   </ProtectedRoute>
                 } />
                 <Route path="/sessionform" element={

@@ -29,8 +29,6 @@ const Sessions = () => {
           upcoming: []
         };
 
-        const now = new Date();
-
         allSessions.forEach(session => {
           if (!session) return; // Skip if session is null or undefined
 
@@ -52,15 +50,48 @@ const Sessions = () => {
             status: session.status || 'upcoming'
           };
 
-          if (session.status === 'ongoing') {
-            categorizedSessions.ongoing.push(formattedSession);
-          } else if (session.status === 'completed') {
-            categorizedSessions.previous.push(formattedSession);
-          } else {
+          // Calculate session end time (assuming 2 hours duration)
+          const sessionEndDate = new Date(sessionDate);
+          sessionEndDate.setHours(sessionEndDate.getHours() + 2);
+
+          // Get current date/time and normalize to same day comparison
+          const now = new Date();
+          const isToday = sessionDate.toDateString() === now.toDateString();
+          
+          // Categorize based on date and time
+          if (isToday) {
+            const currentTime = now.getHours() * 60 + now.getMinutes();
+            const sessionStartTime = parseInt(sessionTime[0]) * 60 + parseInt(sessionTime[1]);
+            const sessionEndTime = sessionStartTime + 120; // 2 hours in minutes
+
+            if (currentTime >= sessionStartTime && currentTime <= sessionEndTime) {
+              // Session is currently ongoing
+              formattedSession.status = 'ongoing';
+              categorizedSessions.ongoing.push(formattedSession);
+            } else if (currentTime < sessionStartTime) {
+              // Session is today but hasn't started
+              formattedSession.status = 'upcoming';
+              categorizedSessions.upcoming.push(formattedSession);
+            } else {
+              // Session has ended
+              formattedSession.status = 'completed';
+              categorizedSessions.previous.push(formattedSession);
+            }
+          } else if (sessionDate > now) {
+            // Future session
+            formattedSession.status = 'upcoming';
             categorizedSessions.upcoming.push(formattedSession);
+          } else {
+            // Past session
+            formattedSession.status = 'completed';
+            categorizedSessions.previous.push(formattedSession);
           }
         });
 
+        // Sort sessions by date
+        categorizedSessions.upcoming.sort((a, b) => new Date(a.date) - new Date(b.date));
+        categorizedSessions.previous.sort((a, b) => new Date(b.date) - new Date(a.date)); // Most recent first
+        
         setSessions(categorizedSessions);
         setLoading(false);
       } catch (err) {
