@@ -69,6 +69,7 @@ const StudentSignUp = () => {
 
     } catch (err) {
       console.error('Signup error:', err);
+      console.error('Response data:', error.response?.data);
       setError(err.response?.data?.message || 'An error occurred during signup. Please try again.');
     } finally {
       setIsLoading(false);

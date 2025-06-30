@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNotifications } from '../context/NotificationContext';
+import { NotificationProvider, useNotifications } from '../contexts/NotificationContext';
 import { formatDistanceToNow } from 'date-fns';
 import Header from '../components/Header';
 import Footer from '../components/Footer';

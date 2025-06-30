@@ -1,111 +1,67 @@
 const mongoose = require('mongoose');
 
 const submissionSchema = new mongoose.Schema({
-  // User reference
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-
-  // Submission type
-  type: {
-    type: String,
-    enum: ['placement', 'internship'],
-    required: true
-  },
-
-  // Company/Organization details
-  companyName: {
+  title: {
     type: String,
     required: true,
     trim: true
   },
-
-  position: {
-    type: String,
-    required: true,
-    trim: true
-  },
-
-  // Application details
-  applicationDate: {
-    type: Date,
-    required: true
-  },
-
-  status: {
-    type: String,
-    enum: ['applied', 'interview', 'selected', 'rejected', 'pending'],
-    default: 'applied'
-  },
-
-  // Compensation details
-  salary: {
-    type: String,
-    sparse: true
-  },
-
-  location: {
-    type: String,
-    required: true,
-    trim: true
-  },
-
-  // Additional details
   description: {
     type: String,
-    trim: true
+    required: true
   },
-
-  skills: [{
+  category: {
     type: String,
-    trim: true
-  }],
-
-  // Application documents
-  resume: {
+    required: true,
+    enum: ['Academic Project', 'Research Proposal', 'Internship Application', 'Placement Application', 'Event Proposal', 'Other']
+  },
+  additionalInfo: {
     type: String,
-    sparse: true
+    default: ''
   },
-
-  coverLetter: {
+  studentId: {
     type: String,
-    sparse: true
+    required: true
   },
-
-  // Timeline
-  startDate: {
-    type: Date,
-    sparse: true
+  studentName: {
+    type: String,
+    required: true
   },
-
-  endDate: {
-    type: Date,
-    sparse: true
+  department: {
+    type: String,
+    required: true
   },
-
-  // Metadata
-  isActive: {
-    type: Boolean,
-    default: true
+  yearOfStudy: {
+    type: String,
+    required: true,
+    enum: ['E-3', 'E-4'] // Only E-3 and E-4 can submit
   },
-
-  createdAt: {
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
+  },
+  submittedAt: {
     type: Date,
     default: Date.now
   },
-
-  updatedAt: {
-    type: Date,
-    default: Date.now
+  reviewedAt: {
+    type: Date
+  },
+  reviewedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  comments: {
+    type: String,
+    default: ''
   }
+}, {
+  timestamps: true
 });
 
-// Update the updatedAt field on save
-submissionSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
-});
+// Index for faster queries
+submissionSchema.index({ studentId: 1, submittedAt: -1 });
+submissionSchema.index({ status: 1 });
 
-module.exports = mongoose.model('Submission', submissionSchema); 
+module.exports = mongoose.model('Submission', submissionSchema);

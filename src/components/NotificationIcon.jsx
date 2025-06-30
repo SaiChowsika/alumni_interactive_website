@@ -58,7 +58,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useNotifications } from '../context/NotificationContext';
+import { NotificationProvider, useNotifications } from '../contexts/NotificationContext';
 import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
 

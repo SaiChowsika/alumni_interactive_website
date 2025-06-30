@@ -1,221 +1,171 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+const API_BASE_URL = 'http://localhost:5001/api';
 
-// Create axios instance
-const api = axios.create({
+// Create axios instance with default config
+const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
 });
 
-// Request interceptor
-api.interceptors.request.use((config) => {
+// Add token to requests if available
+apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  console.log('📤 API Request:', config.method?.toUpperCase(), config.url);
   return config;
 });
 
-// Response interceptor
-api.interceptors.response.use(
-  (response) => {
-    console.log('✅ API Response:', response.status, response.config.url);
-    return response;
-  },
+// Handle response errors globally
+apiClient.interceptors.response.use(
+  (response) => response.data,
   (error) => {
-    console.error('❌ API Error:', error.response?.status, error.response?.data || error.message);
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/signin';
-    }
+    console.error('API Error:', error);
     return Promise.reject(error);
   }
 );
 
-// Auth services
+// Auth Service
 export const authService = {
-  login: async (credentials) => {
-    const response = await api.post('/auth/login', credentials);
-    return response.data;
-  },
-
-  signup: async (userData) => {
-    const response = await api.post('/auth/signup', userData);
-    return response.data;
-  },
-
   getCurrentUser: async () => {
-    const response = await api.get('/auth/me');
-    return response.data;
+    return await apiClient.get('/auth/me');
+  },
+  
+  signup: async (userData) => {
+    return await apiClient.post('/auth/signup-simple', userData);
+  },
+  
+  login: async (credentials) => {
+    return await apiClient.post('/auth/login', credentials);
+  },
+  
+  logout: async () => {
+    return await apiClient.post('/auth/logout');
+  },
+  
+  forgotPassword: async (email) => {
+    return await apiClient.post('/auth/forgot-password', { email });
+  },
+  
+  changePassword: async (passwordData) => {
+    return await apiClient.post('/auth/change-password', passwordData);
+  },
+  
+  checkEligibility: async (data) => {
+    return await apiClient.post('/auth/check-eligibility', data);
   }
 };
 
-// Session services
+// Session Service
 export const sessionService = {
-  getAllSessions: async () => {
-    try {
-      const response = await api.get('/sessions');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching sessions:', error);
-      return { status: 'error', message: 'Failed to fetch sessions', data: [] };
-    }
+  getSessions: async () => {
+    return await apiClient.get('/sessions');
   },
-
+  
   createSession: async (sessionData) => {
-    try {
-      const response = await api.post('/sessions', sessionData);
-      return response.data;
-    } catch (error) {
-      console.error('Error creating session:', error);
-      throw error;
-    }
+    return await apiClient.post('/sessions', sessionData);
   },
-
+  
+  getSessionById: async (id) => {
+    return await apiClient.get(`/sessions/${id}`);
+  },
+  
   updateSession: async (id, sessionData) => {
-    try {
-      const response = await api.put(`/sessions/${id}`, sessionData);
-      return response.data;
-    } catch (error) {
-      console.error('Error updating session:', error);
-      throw error;
-    }
+    return await apiClient.put(`/sessions/${id}`, sessionData);
   },
-
+  
   deleteSession: async (id) => {
-    try {
-      const response = await api.delete(`/sessions/${id}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error deleting session:', error);
-      throw error;
-    }
+    return await apiClient.delete(`/sessions/${id}`);
   },
-
-  joinSession: async (sessionId) => {
-    try {
-      const response = await api.post(`/sessions/${sessionId}/join`);
-      return response.data;
-    } catch (error) {
-      console.error('Error joining session:', error);
-      throw error;
-    }
+  
+  joinSession: async (id) => {
+    return await apiClient.post(`/sessions/${id}/join`);
+  },
+  
+  leaveSession: async (id) => {
+    return await apiClient.post(`/sessions/${id}/leave`);
   }
 };
 
-// User services
-export const userService = {
-  getAllUsers: async () => {
-    try {
-      const response = await api.get('/users');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      return { status: 'error', message: 'Failed to fetch users', data: [] };
-    }
-  },
-
-  getUserProfile: async (id) => {
-    try {
-      const response = await api.get(`/users/${id}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      throw error;
-    }
-  },
-
-  updateUserProfile: async (id, userData) => {
-    try {
-      const response = await api.put(`/users/${id}`, userData);
-      return response.data;
-    } catch (error) {
-      console.error('Error updating user profile:', error);
-      throw error;
-    }
-  },
-
-  searchUsers: async (query) => {
-    try {
-      const response = await api.get(`/users/search?q=${query}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error searching users:', error);
-      return { status: 'error', data: [] };
-    }
-  }
-};
-
-// Statistics services
-export const statisticsService = {
-  getDashboardStats: async () => {
-    try {
-      const response = await api.get('/statistics/dashboard');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-      return { 
-        status: 'error', 
-        data: {
-          totalUsers: 0,
-          totalSessions: 0,
-          activeSessions: 0,
-          totalAlumni: 0
-        }
-      };
-    }
-  }
-};
-
-// Add this to your existing api.js file, before export default api;
-
-// Submission services
+// Submission Service
 export const submissionService = {
-  getAllSubmissions: async () => {
-    try {
-      const response = await api.get('/submissions');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching submissions:', error);
-      throw error;
-    }
+  getSubmissions: async () => {
+    return await apiClient.get('/submissions');
   },
-
+  
   createSubmission: async (submissionData) => {
-    try {
-      const response = await api.post('/submissions', submissionData);
-      return response.data;
-    } catch (error) {
-      console.error('Error creating submission:', error);
-      throw error;
-    }
+    return await apiClient.post('/submissions', submissionData);
   },
-
+  
+  getSubmissionById: async (id) => {
+    return await apiClient.get(`/submissions/${id}`);
+  },
+  
   updateSubmission: async (id, submissionData) => {
-    try {
-      const response = await api.put(`/submissions/${id}`, submissionData);
-      return response.data;
-    } catch (error) {
-      console.error('Error updating submission:', error);
-      throw error;
-    }
+    return await apiClient.put(`/submissions/${id}`, submissionData);
   },
-
+  
   deleteSubmission: async (id) => {
-    try {
-      const response = await api.delete(`/submissions/${id}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error deleting submission:', error);
-      throw error;
-    }
+    return await apiClient.delete(`/submissions/${id}`);
   }
 };
 
-export default api;
+// Placements Service
+export const placementService = {
+  getPlacements: async () => {
+    return await apiClient.get('/placements');
+  },
+  
+  createPlacement: async (placementData) => {
+    return await apiClient.post('/placements', placementData);
+  },
+  
+  getPlacementById: async (id) => {
+    return await apiClient.get(`/placements/${id}`);
+  },
+  
+  updatePlacement: async (id, placementData) => {
+    return await apiClient.put(`/placements/${id}`, placementData);
+  },
+  
+  deletePlacement: async (id) => {
+    return await apiClient.delete(`/placements/${id}`);
+  },
+  
+  getUserPlacements: async (userId) => {
+    return await apiClient.get(`/placements/user/${userId}`);
+  }
+};
+
+// Notification Service
+export const notificationService = {
+  getNotifications: async () => {
+    return await apiClient.get('/notifications');
+  },
+  
+  createNotification: async (notificationData) => {
+    return await apiClient.post('/notifications', notificationData);
+  },
+  
+  getNotificationById: async (id) => {
+    return await apiClient.get(`/notifications/${id}`);
+  },
+  
+  markAsRead: async (id) => {
+    return await apiClient.put(`/notifications/${id}/read`);
+  },
+  
+  markAllAsRead: async () => {
+    return await apiClient.put('/notifications/read-all');
+  },
+  
+  deleteNotification: async (id) => {
+    return await apiClient.delete(`/notifications/${id}`);
+  }
+};
+
+// Export default axios instance for custom requests
+export default apiClient;

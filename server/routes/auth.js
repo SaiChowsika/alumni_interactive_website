@@ -13,11 +13,106 @@ const generateToken = (userId, role) => {
   );
 };
 
+// GET /auth/me - Get current user
+router.get('/me', async (req, res) => {
+  try {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Access denied. No token provided.'
+      });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.userId).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      status: 'success',
+      data: {
+        user
+      }
+    });
+  } catch (error) {
+    res.status(401).json({
+      status: 'error',
+      message: 'Invalid token'
+    });
+  }
+});
+
+// SIMPLE SIGNUP ROUTE (no pre-registration required)
+router.post('/signup-simple', async (req, res) => {
+  try {
+    console.log('📝 Simple signup attempt:', req.body);
+    
+    const { email, password, role, fullName, ...otherFields } = req.body;
+
+    // Basic validation
+    if (!email || !password || !role || !fullName) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Please provide email, password, role, and fullName'
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'User already registered. Please use sign in.'
+      });
+    }
+
+    // Create user directly
+    const userData = {
+      fullName,
+      email,
+      password,
+      role,
+      ...otherFields
+    };
+
+    const user = new User(userData);
+    await user.save();
+
+    // Generate JWT token
+    const token = generateToken(user._id, user.role);
+
+    console.log('✅ User registered successfully:', user.email);
+
+    res.status(201).json({
+      status: 'success',
+      message: 'Registration completed successfully',
+      token,
+      data: {
+        user: user.toJSON()
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Simple signup error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message || 'Error completing registration'
+    });
+  }
+});
+
 // SIGNUP ROUTE - Complete Registration
 router.post('/signup', async (req, res) => {
   try {
     console.log('📝 Signup attempt:', req.body.email, req.body.role);
-    
+
     const { email, password, role, ...otherFields } = req.body;
 
     // Validate required fields
@@ -38,7 +133,7 @@ router.post('/signup', async (req, res) => {
     }
 
     // Find pre-registration record
-    const preRegRecord = await PreRegistration.findOne({ 
+    const preRegRecord = await PreRegistration.findOne({
       email: email.toLowerCase(),
       role: role,
       isRegistered: false
@@ -128,7 +223,6 @@ router.post('/signup', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Signup error:', error);
-    
     if (error.code === 11000) {
       return res.status(400).json({
         status: 'error',
@@ -147,7 +241,7 @@ router.post('/signup', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     console.log('🔑 Login attempt:', req.body.email);
-    
+
     const { email, password } = req.body;
 
     // Validate input
@@ -160,7 +254,7 @@ router.post('/login', async (req, res) => {
 
     // Find user and include password for comparison
     const user = await User.findOne({ email, isActive: true }).select('+password');
-    
+
     if (!user) {
       return res.status(401).json({
         status: 'error',
@@ -170,7 +264,7 @@ router.post('/login', async (req, res) => {
 
     // Check password
     const isPasswordCorrect = await user.comparePassword(password);
-    
+
     if (!isPasswordCorrect) {
       return res.status(401).json({
         status: 'error',
@@ -259,4 +353,4 @@ router.post('/check-eligibility', async (req, res) => {
   }
 });
 
-module.exports = router;  
+module.exports = router;

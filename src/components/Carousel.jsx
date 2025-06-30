@@ -37,41 +37,50 @@ const Carousel = () => {
           name="carousel"
         />
 
-        {/* Carousel items */}
-        <div className="absolute w-full h-full opacity-0 peer-checked/carousel-1:opacity-100 transition-opacity duration-700 ">
-          <img
-            src="src/assets/20240112_PA_folksong.jpg"
-            alt="Slide 1"
-            className="w-full h-full object-cover"
-          />
+        {/* Carousel items with fallback backgrounds */}
+        <div className="absolute w-full h-full opacity-0 peer-checked/carousel-1:opacity-100 transition-opacity duration-700">
+          <div className="w-full h-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center">
+            <div className="text-center text-white">
+              <h3 className="text-3xl font-bold mb-2">RGUKT Campus</h3>
+              <p className="text-xl">Folk Song Event 2024</p>
+            </div>
+          </div>
         </div>
+        
         <div className="absolute w-full h-full opacity-0 peer-checked/carousel-2:opacity-100 transition-opacity duration-700">
-          <img
-            src="src/assets/214063-iiit.jpg"
-            alt="Slide 2"
-            className="w-full h-full object-cover"
-          />
+          <div className="w-full h-full bg-gradient-to-r from-green-600 to-blue-600 flex items-center justify-center">
+            <div className="text-center text-white">
+              <h3 className="text-3xl font-bold mb-2">IIIT Campus</h3>
+              <p className="text-xl">Academic Excellence</p>
+            </div>
+          </div>
         </div>
+        
         <div className="absolute w-full h-full opacity-0 peer-checked/carousel-3:opacity-100 transition-opacity duration-700">
-          <img
-            src="src/assets/19.jpg"
-            alt="Slide 3"
-            className="w-full h-full object-cover"
-          />
+          <div className="w-full h-full bg-gradient-to-r from-orange-600 to-red-600 flex items-center justify-center">
+            <div className="text-center text-white">
+              <h3 className="text-3xl font-bold mb-2">Student Life</h3>
+              <p className="text-xl">Campus Activities</p>
+            </div>
+          </div>
         </div>
+        
         <div className="absolute w-full h-full opacity-0 peer-checked/carousel-4:opacity-100 transition-opacity duration-700">
-          <img
-            src="src/assets/images (1).jpeg"
-            alt="Slide 4"
-            className="w-full h-full object-cover"
-          />
+          <div className="w-full h-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center">
+            <div className="text-center text-white">
+              <h3 className="text-3xl font-bold mb-2">Innovation Hub</h3>
+              <p className="text-xl">Technology & Learning</p>
+            </div>
+          </div>
         </div>
+        
         <div className="absolute w-full h-full opacity-0 peer-checked/carousel-5:opacity-100 transition-opacity duration-700">
-          <img
-            src="src/assets/images.jpeg"
-            alt="Slide 5"
-            className="w-full h-full object-cover"
-          />
+          <div className="w-full h-full bg-gradient-to-r from-teal-600 to-green-600 flex items-center justify-center">
+            <div className="text-center text-white">
+              <h3 className="text-3xl font-bold mb-2">Alumni Network</h3>
+              <p className="text-xl">Building Connections</p>
+            </div>
+          </div>
         </div>
 
         {/* Navigation buttons */}

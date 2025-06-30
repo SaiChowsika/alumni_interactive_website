@@ -4,30 +4,35 @@ const bcrypt = require('bcryptjs');
 const userSchema = new mongoose.Schema({
   fullName: {
     type: String,
-    required: [true, 'Full name is required'],
+    required: true,
     trim: true
   },
-  
   email: {
     type: String,
-    required: [true, 'Email is required'],
+    required: true,
     unique: true,
-    trim: true,
-    lowercase: true
+    lowercase: true,
+    trim: true
   },
-  
   password: {
     type: String,
-    required: [true, 'Password is required'],
-    minlength: [6, 'Password must be at least 6 characters']
+    required: true,
+    minlength: 6,
+    select: false
   },
-  
   role: {
     type: String,
-    enum: ['student', 'faculty', 'admin'],
-    required: [true, 'Role is required']
+    required: true,
+    enum: ['student', 'alumni', 'faculty', 'admin']
   },
-
+  phoneNumber: {
+    type: String,
+    trim: true
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
   // Student specific fields
   studentId: {
     type: String,
@@ -35,58 +40,27 @@ const userSchema = new mongoose.Schema({
   },
   department: {
     type: String,
-    enum: ['CSE', 'ECE', 'EEE', 'CIVIL', 'MECH', 'CHEM', 'MME'],
-    sparse: true
+    enum: ['CSE', 'ECE', 'EEE', 'CIVIL', 'MECH', 'CHEM', 'MME']
   },
   yearOfStudy: {
     type: String,
-    enum: ['E-1', 'E-2', 'E-3', 'E-4'],
-    sparse: true
+    enum: ['E-1', 'E-2', 'E-3', 'E-4']
   },
-
   // Faculty specific fields
   facultyId: {
     type: String,
     sparse: true
   },
   designation: {
-    type: String,
-    sparse: true
+    type: String
   },
-
   // Admin specific fields
   adminId: {
     type: String,
     sparse: true
-  },
-
-  // Common fields
-  phoneNumber: {
-    type: String,
-    sparse: true
-  },
-  
-  profilePhoto: {
-    type: String,
-    default: '/src/assets/profile1.jpg'
-  },
-
-  // Pre-registration reference
-  preRegistrationId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'PreRegistration',
-    sparse: true
-  },
-
-  isActive: {
-    type: Boolean,
-    default: true
-  },
-
-  createdAt: {
-    type: Date,
-    default: Date.now
   }
+}, {
+  timestamps: true
 });
 
 // Hash password before saving
@@ -102,20 +76,16 @@ userSchema.pre('save', async function(next) {
   }
 });
 
-// Method to compare password
+// Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  try {
-    return await bcrypt.compare(candidatePassword, this.password);
-  } catch (error) {
-    return false;
-  }
+  return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Remove password from JSON output
+// Transform toJSON to remove sensitive data
 userSchema.methods.toJSON = function() {
-  const userObject = this.toObject();
-  delete userObject.password;
-  return userObject;
+  const user = this.toObject();
+  delete user.password;
+  return user;
 };
 
 module.exports = mongoose.model('User', userSchema);

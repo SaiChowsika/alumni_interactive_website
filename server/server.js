@@ -1,70 +1,62 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const dotenv = require('dotenv');
-const path = require('path');
+require('dotenv').config();
 
-// Load environment variables
-dotenv.config();
-
-// Create Express app
 const app = express();
 
 // Middleware
-app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
-  credentials: true
-}));
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Import routes
+const authRoutes = require('./routes/auth');
+const submissionRoutes = require('./routes/submissions');
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI, {
+// Register routes with /api prefix
+app.use('/api/auth', authRoutes);
+app.use('/api/submissions', submissionRoutes);
+
+// MongoDB connection
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/alumni_website', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-.then(() => {
-  console.log('✅ Connected to MongoDB Atlas');
-})
-.catch((err) => {
-  console.error('❌ MongoDB connection error:', err);
-  process.exit(1);
+.then(() => console.log('✅ Connected to MongoDB'))
+.catch((error) => console.error('❌ MongoDB connection error:', error));
+
+// Test routes
+app.get('/', (req, res) => {
+  res.json({ message: 'Alumni Website API is running!' });
 });
 
-// Test route
 app.get('/api/test', (req, res) => {
-  res.json({ 
-    message: 'Server is working!',
-    timestamp: new Date().toISOString()
-  });
+  res.json({ message: 'API routes are working!' });
 });
 
-// Routes
-app.use('/api/auth', require('./routes/auth'));
-// Add this line with your other route imports
-app.use('/api/submissions', require('./routes/submissions'));
+app.get('/api/auth/test', (req, res) => {
+  res.json({ message: 'Auth routes are working!' });
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Server Error:', err.stack);
+  console.error(err.stack);
   res.status(500).json({ 
-    status: 'error',
-    message: 'Something went wrong!'
+    status: 'error', 
+    message: 'Something went wrong!' 
   });
 });
 
-// 404 handler
+// 404 handler for undefined routes
 app.use('*', (req, res) => {
-  res.status(404).json({
-    status: 'error',
-    message: `Route ${req.originalUrl} not found`
+  console.log(`❌ Route not found: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({ 
+    status: 'error', 
+    message: `Route ${req.originalUrl} not found` 
   });
 });
 
-// Start server
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);

@@ -1,59 +1,38 @@
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
 const Submission = require('../models/Submission');
-const User = require('../models/User');
+const { authMiddleware } = require('../middleware/auth');
 
-// Middleware to authenticate user
-const authenticateUser = async (req, res, next) => {
-  try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    
-    if (!token) {
-      return res.status(401).json({
-        status: 'error',
-        message: 'No token provided'
-      });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.userId);
-    
-    if (!user) {
-      return res.status(401).json({
-        status: 'error',
-        message: 'User not found'
-      });
-    }
-
-    req.user = user;
-    next();
-  } catch (error) {
-    return res.status(401).json({
+// Middleware to check if student is E-3 or E-4
+const checkEligibility = (req, res, next) => {
+  const { yearOfStudy } = req.user;
+  if (yearOfStudy !== 'E-3' && yearOfStudy !== 'E-4') {
+    return res.status(403).json({
       status: 'error',
-      message: 'Invalid token'
+      message: 'Only E-3 and E-4 students can submit forms'
     });
   }
+  next();
 };
 
-// GET /api/submissions - Get all submissions for current user
-router.get('/', authenticateUser, async (req, res) => {
+// Get all submissions for the current student
+router.get('/', authMiddleware, async (req, res) => {
   try {
-    const submissions = await Submission.find({ 
-      userId: req.user._id,
-      isActive: true 
-    }).sort({ createdAt: -1 });
-
-    console.log(`✅ Found ${submissions.length} submissions for user ${req.user.email}`);
+    const studentId = req.user.studentId || req.user.id;
+    
+    const submissions = await Submission.find({ studentId })
+      .sort({ submittedAt: -1 }) // Most recent first
+      .lean();
 
     res.json({
       status: 'success',
       data: {
-        submissions
+        submissions,
+        count: submissions.length
       }
     });
   } catch (error) {
-    console.error('❌ Error fetching submissions:', error);
+    console.error('Error fetching submissions:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch submissions'
@@ -61,21 +40,33 @@ router.get('/', authenticateUser, async (req, res) => {
   }
 });
 
-// POST /api/submissions - Create new submission
-router.post('/', authenticateUser, async (req, res) => {
+// Create new submission
+router.post('/', authMiddleware, checkEligibility, async (req, res) => {
   try {
-    console.log('📝 Creating new submission for user:', req.user.email);
-    console.log('Submission data:', req.body);
+    const { title, description, category, additionalInfo } = req.body;
+    
+    // Validate required fields
+    if (!title || !description || !category) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Title, description, and category are required'
+      });
+    }
 
+    // Create submission with user data
     const submissionData = {
-      userId: req.user._id,
-      ...req.body
+      title: title.trim(),
+      description: description.trim(),
+      category,
+      additionalInfo: additionalInfo?.trim() || '',
+      studentId: req.user.studentId || req.user.id,
+      studentName: req.user.fullName,
+      department: req.user.department,
+      yearOfStudy: req.user.yearOfStudy
     };
 
     const submission = new Submission(submissionData);
     await submission.save();
-
-    console.log('✅ Submission created successfully:', submission._id);
 
     res.status(201).json({
       status: 'success',
@@ -85,20 +76,23 @@ router.post('/', authenticateUser, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Error creating submission:', error);
+    console.error('Error creating submission:', error);
     res.status(500).json({
       status: 'error',
-      message: error.message || 'Failed to create submission'
+      message: 'Failed to create submission'
     });
   }
 });
 
-// PUT /api/submissions/:id - Update submission
-router.put('/:id', authenticateUser, async (req, res) => {
+// Get specific submission by ID
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
-    const submission = await Submission.findOne({
-      _id: req.params.id,
-      userId: req.user._id
+    const { id } = req.params;
+    const studentId = req.user.studentId || req.user.id;
+
+    const submission = await Submission.findOne({ 
+      _id: id, 
+      studentId 
     });
 
     if (!submission) {
@@ -108,56 +102,17 @@ router.put('/:id', authenticateUser, async (req, res) => {
       });
     }
 
-    Object.assign(submission, req.body);
-    await submission.save();
-
-    console.log('✅ Submission updated successfully:', submission._id);
-
     res.json({
       status: 'success',
-      message: 'Submission updated successfully',
       data: {
         submission
       }
     });
   } catch (error) {
-    console.error('❌ Error updating submission:', error);
+    console.error('Error fetching submission:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Failed to update submission'
-    });
-  }
-});
-
-// DELETE /api/submissions/:id - Delete submission
-router.delete('/:id', authenticateUser, async (req, res) => {
-  try {
-    const submission = await Submission.findOne({
-      _id: req.params.id,
-      userId: req.user._id
-    });
-
-    if (!submission) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'Submission not found'
-      });
-    }
-
-    submission.isActive = false;
-    await submission.save();
-
-    console.log('✅ Submission deleted successfully:', submission._id);
-
-    res.json({
-      status: 'success',
-      message: 'Submission deleted successfully'
-    });
-  } catch (error) {
-    console.error('❌ Error deleting submission:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to delete submission'
+      message: 'Failed to fetch submission'
     });
   }
 });
