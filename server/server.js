@@ -13,10 +13,12 @@ app.use(express.urlencoded({ extended: true }));
 // Import routes
 const authRoutes = require('./routes/auth');
 const submissionRoutes = require('./routes/submissions');
+const placementRoutes = require('./routes/placements'); // Add this line
 
 // Register routes with /api prefix
 app.use('/api/auth', authRoutes);
 app.use('/api/submissions', submissionRoutes);
+app.use('/api/placements', placementRoutes); // Add this line
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/alumni_website', {
@@ -42,18 +44,18 @@ app.get('/api/auth/test', (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ 
-    status: 'error', 
-    message: 'Something went wrong!' 
+  res.status(500).json({
+    status: 'error',
+    message: 'Something went wrong!'
   });
 });
 
 // 404 handler for undefined routes
 app.use('*', (req, res) => {
   console.log(`❌ Route not found: ${req.method} ${req.originalUrl}`);
-  res.status(404).json({ 
-    status: 'error', 
-    message: `Route ${req.originalUrl} not found` 
+  res.status(404).json({
+    status: 'error',
+    message: `Route ${req.originalUrl} not found`
   });
 });
 

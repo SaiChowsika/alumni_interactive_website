@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { submissionService } from '../services/api';
 
 const SubmissionForm = ({ studentData, onSubmissionSuccess }) => {
   const [formData, setFormData] = useState({
@@ -8,6 +7,7 @@ const SubmissionForm = ({ studentData, onSubmissionSuccess }) => {
     category: '',
     additionalInfo: ''
   });
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -42,12 +42,12 @@ const SubmissionForm = ({ studentData, onSubmissionSuccess }) => {
         studentName: studentData.fullName,
         department: studentData.department,
         yearOfStudy: studentData.yearOfStudy,
-        submittedAt: new Date().toISOString()
+        submittedAt: new Date().toISOString(),
+        _id: Date.now().toString() // Mock ID
       };
 
-      const response = await submissionService.createSubmission(submissionData);
-      
-      if (response.status === 'success') {
+      // Mock success - no API call
+      setTimeout(() => {
         setSuccess(true);
         setFormData({
           title: '',
@@ -55,21 +55,18 @@ const SubmissionForm = ({ studentData, onSubmissionSuccess }) => {
           category: '',
           additionalInfo: ''
         });
-        
-        // Call the parent component's success handler
+
         if (onSubmissionSuccess) {
-          onSubmissionSuccess(response.data.submission);
+          onSubmissionSuccess(submissionData);
         }
 
-        // Hide success message after 3 seconds
         setTimeout(() => setSuccess(false), 3000);
-      } else {
-        setError(response.message || 'Failed to submit form');
-      }
+        setLoading(false);
+      }, 1000);
+
     } catch (error) {
       console.error('Submission error:', error);
       setError('Failed to submit form. Please try again.');
-    } finally {
       setLoading(false);
     }
   };

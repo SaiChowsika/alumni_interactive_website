@@ -67,16 +67,13 @@ const SubmissionHistory = ({ submissions, loading, error, onRefresh }) => {
                 {submission.category}
               </span>
             </div>
-            
             <p className="text-gray-600 mb-3">{submission.description}</p>
-            
             {submission.additionalInfo && (
               <div className="mb-3">
                 <p className="text-sm font-medium text-gray-700 mb-1">Additional Information:</p>
                 <p className="text-sm text-gray-600">{submission.additionalInfo}</p>
               </div>
             )}
-            
             <div className="flex justify-between items-center text-sm text-gray-500">
               <span>
                 Submitted: {submission.submittedAt ? format(new Date(submission.submittedAt), 'PPp') : 'Unknown date'}

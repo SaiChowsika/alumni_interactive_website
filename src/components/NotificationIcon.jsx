@@ -1,108 +1,39 @@
-/**
- * NotificationIcon Component
- * 
- * A dynamic notification bell icon that displays real-time notifications
- * and provides interaction with the notification system.
- * 
- * Features:
- * - Real-time notification updates
- * - Unread count badge
- * - Dropdown notification list
- * - Mark as read functionality
- * - Notification filtering
- * 
- * Props:
- * @param {boolean} showBadge - Whether to show unread count badge
- * @param {string} size - Icon size (sm/md/lg)
- * @param {Function} onClick - Click handler for the icon
- * @param {string} className - Additional CSS classes
- * 
- * States:
- * - isOpen: Dropdown open state
- * - notifications: Current notifications list
- * - unreadCount: Number of unread notifications
- * - loading: Loading state indicator
- * 
- * Interactions:
- * 1. Click Behavior
- *    - Toggle dropdown
- *    - Mark notifications as read
- *    - Navigate to full view
- * 
- * 2. Notification Display
- *    - Title and preview
- *    - Timestamp
- *    - Read/Unread status
- *    - Priority indicators
- * 
- * 3. Animation
- *    - Smooth dropdown transition
- *    - Badge animations
- *    - Loading states
- * 
- * Dependencies:
- * - NotificationContext for data
- * - useNotifications hook
- * - Tailwind CSS for styling
- * 
- * @component NotificationIcon
- * @example
- * ```jsx
- * <NotificationIcon
- *   showBadge={true}
- *   size="md"
- *   onClick={handleClick}
- *   className="text-gray-600"
- * />
- * ```
- */
-
-import React, { useState, useRef, useEffect } from 'react';
-import { NotificationProvider, useNotifications } from '../contexts/NotificationContext';
-import { formatDistanceToNow } from 'date-fns';
-import { Link } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from "react";
+import { useNotifications } from "../context/NotificationContext";  // Fixed path: context not contexts
+import { formatDistanceToNow } from "date-fns";
+import { Link } from "react-router-dom";
 
 const NotificationIcon = () => {
-  const [showDropdown, setShowDropdown] = useState(false);
-  const notificationDropdownRef = useRef(null);
-  const { notifications, loading, error, markAsRead } = useNotifications();
+  const { notifications, removeNotification } = useNotifications();
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (notificationDropdownRef.current && !notificationDropdownRef.current.contains(event.target)) {
-        setShowDropdown(false);
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;
-
-  const handleNotificationClick = async (notification) => {
-    if (!notification.read) {
-      await markAsRead(notification._id);
-    }
-    if (notification.link) {
-      window.location.href = notification.link;
-    }
-  };
-
-  // Get recent notifications (last 5)
   const recentNotifications = notifications.slice(0, 5);
 
   return (
-    <div className="relative" ref={notificationDropdownRef}>
+    <div className="relative" ref={dropdownRef}>
+      {/* Notification Bell Icon */}
       <button
-        onClick={() => setShowDropdown(!showDropdown)}
-        className="relative p-2 text-gray-600 hover:text-gray-900 focus:outline-none hover:cursor-pointer"
+        onClick={() => setIsOpen(!isOpen)}
+        className="relative p-2 text-gray-600 hover:text-gray-800 focus:outline-none"
       >
         <svg
-          className="h-6 w-6"
+          className="w-6 h-6"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -112,72 +43,97 @@ const NotificationIcon = () => {
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth={2}
-            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+            d="M15 17h5l-3.5-3.5a50.002 50.002 0 00-1.06-1.06L15 17zm-6-6h6m-3-3v6m-3 9h12a3 3 0 01-3-3V9a3 3 0 00-3-3H9a3 3 0 00-3 3v9a3 3 0 01-3 3z"
           />
         </svg>
+        
+        {/* Notification Badge */}
         {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
-            {unreadCount}
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+            {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </button>
 
-      {showDropdown && (
-        <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg overflow-hidden z-50">
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+      {/* Dropdown Menu */}
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border z-50 max-h-96 overflow-y-auto">
+          <div className="p-4 border-b">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
               <Link
                 to="/notifications"
-                className="text-sm text-blue-600 hover:text-blue-800"
-                onClick={() => setShowDropdown(false)}
+                className="text-blue-600 text-sm hover:underline"
+                onClick={() => setIsOpen(false)}
               >
                 View All
               </Link>
             </div>
-            <div className="space-y-4">
-              {loading ? (
-                <div className="text-sm text-gray-700">Loading notifications...</div>
-              ) : error ? (
-                <div className="text-sm text-red-600">{error}</div>
-              ) : recentNotifications.length === 0 ? (
-                <div className="text-sm text-gray-700">No notifications</div>
-              ) : (
-                recentNotifications.map((notification) => (
-                  <div
-                    key={notification._id}
-                    onClick={() => handleNotificationClick(notification)}
-                    className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                      notification.read ? 'bg-gray-50' : 'bg-blue-50'
-                    }`}
-                  >
-                    <div className="flex items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-gray-900">
-                            {notification.title}
-                          </p>
-                          <span className="text-xs text-gray-500">
-                            {formatDistanceToNow(new Date(notification.createdAt), {
-                              addSuffix: true,
-                            })}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {notification.message}
-                        </p>
-                        {!notification.read && (
-                          <span className="mt-2 inline-block text-xs text-blue-600">
-                            New
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
           </div>
+
+          <div className="max-h-64 overflow-y-auto">
+            {recentNotifications.length === 0 ? (
+              <div className="p-4 text-center text-gray-500">
+                No notifications
+              </div>
+            ) : (
+              recentNotifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className="p-4 border-b hover:bg-gray-50 cursor-pointer"
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h4 className="text-sm font-medium text-gray-800 truncate">
+                        {notification.title}
+                      </h4>
+                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                        {notification.message}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-2">
+                        {formatDistanceToNow(new Date(notification.timestamp), {
+                          addSuffix: true,
+                        })}
+                      </p>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeNotification(notification.id);
+                      }}
+                      className="text-gray-400 hover:text-red-500 ml-2"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {recentNotifications.length > 0 && (
+            <div className="p-4 border-t bg-gray-50">
+              <Link
+                to="/notifications"
+                className="block text-center text-blue-600 text-sm hover:underline"
+                onClick={() => setIsOpen(false)}
+              >
+                View All Notifications
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </div>
