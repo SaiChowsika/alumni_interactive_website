@@ -2,27 +2,33 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
-// Create axios instance with default config
+// Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000,
 });
 
-// Request interceptor for adding auth token
+// Request interceptor
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  console.log('📤 API Request:', config.method?.toUpperCase(), config.url);
   return config;
 });
 
-// Response interceptor for handling errors
+// Response interceptor
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('✅ API Response:', response.status, response.config.url);
+    return response;
+  },
   (error) => {
+    console.error('❌ API Error:', error.response?.status, error.response?.data || error.message);
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -35,55 +41,17 @@ api.interceptors.response.use(
 // Auth services
 export const authService = {
   login: async (credentials) => {
-    const response = await api.post('/api/auth/login', credentials);
+    const response = await api.post('/auth/login', credentials);
     return response.data;
   },
-  signup: async (userData) => {
-    try {
-      const response = await api.post('/api/auth/signup', userData);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'An error occurred during signup' };
-    }
-  },
-  forgotPassword: async (email) => {
-    try {
-      const response = await api.post('/api/auth/forgot-password', { email });
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to process forgot password request' };
-    }
-  },
-  resetPassword: async (token, newPassword) => {
-    try {
-      const response = await api.patch(`/api/auth/reset-password/${token}`, { password: newPassword });
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Password reset failed' };
-    }
-  },
-  verifyEmail: async (token) => {
-    try {
-      const response = await api.get(`/api/auth/verify-email/${token}`);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Email verification failed' };
-    }
-  }
-};
 
-// User services
-export const userService = {
-  getProfile: async () => {
-    const response = await api.get('/user/profile');
+  signup: async (userData) => {
+    const response = await api.post('/auth/signup', userData);
     return response.data;
   },
-  updateProfile: async (profileData) => {
-    const response = await api.put('/user/profile', profileData);
-    return response.data;
-  },
-  getFacultyMembers: async () => {
-    const response = await api.get('/api/users/faculty');
+
+  getCurrentUser: async () => {
+    const response = await api.get('/auth/me');
     return response.data;
   }
 };
@@ -91,89 +59,163 @@ export const userService = {
 // Session services
 export const sessionService = {
   getAllSessions: async () => {
-    const response = await api.get('/api/sessions');
-    return response.data;
+    try {
+      const response = await api.get('/sessions');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching sessions:', error);
+      return { status: 'error', message: 'Failed to fetch sessions', data: [] };
+    }
   },
+
   createSession: async (sessionData) => {
-    const response = await api.post('/api/sessions', sessionData);
-    return response.data;
+    try {
+      const response = await api.post('/sessions', sessionData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating session:', error);
+      throw error;
+    }
   },
+
   updateSession: async (id, sessionData) => {
-    const response = await api.put(`/api/sessions/${id}`, sessionData);
-    return response.data;
+    try {
+      const response = await api.put(`/sessions/${id}`, sessionData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating session:', error);
+      throw error;
+    }
   },
+
   deleteSession: async (id) => {
-    const response = await api.delete(`/api/sessions/${id}`);
-    return response.data;
+    try {
+      const response = await api.delete(`/sessions/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting session:', error);
+      throw error;
+    }
   },
-  updateSessionStatus: async (id, status, reason = '') => {
-    const response = await api.patch(`/api/sessions/${id}/status`, { status, reason });
-    return response.data;
-  },
-  getPendingSessions: async () => {
-    const response = await api.get('/api/sessions/pending');
-    return response.data;
-  },
-  sendSessionStatusEmail: async (sessionId, status, reason = '') => {
-    const response = await api.post(`/api/sessions/${sessionId}/notify`, { status, reason });
-    return response.data;
-  },
-  getUserSessions: async (userId) => {
-    const response = await api.get(`/api/sessions/user/${userId}`);
-    return response.data;
+
+  joinSession: async (sessionId) => {
+    try {
+      const response = await api.post(`/sessions/${sessionId}/join`);
+      return response.data;
+    } catch (error) {
+      console.error('Error joining session:', error);
+      throw error;
+    }
   }
 };
 
-// Department services
-export const departmentService = {
-  getAllDepartments: async () => {
-    const response = await api.get('/departments');
-    return response.data;
-  },
-  getDepartmentMembers: async (departmentId) => {
-    const response = await api.get(`/departments/${departmentId}/members`);
-    return response.data;
-  },
-};
-
-// Placement services
-export const placementService = {
-  getAllPlacements: async () => {
-    const response = await api.get('/placements');
-    return response.data;
-  },
-  getPlacementStats: async () => {
-    const response = await api.get('/placements/stats');
-    return response.data;
-  },
-};
-
-// Notification API calls
-export const getNotifications = async () => {
-  const response = await axios.get('/api/notifications', {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`
+// User services
+export const userService = {
+  getAllUsers: async () => {
+    try {
+      const response = await api.get('/users');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      return { status: 'error', message: 'Failed to fetch users', data: [] };
     }
-  });
-  return response.data;
-};
+  },
 
-export const markNotificationAsRead = async (notificationId) => {
-  const response = await axios.put(`/api/notifications/${notificationId}/read`, {}, {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`
+  getUserProfile: async (id) => {
+    try {
+      const response = await api.get(`/users/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      throw error;
     }
-  });
-  return response.data;
-};
+  },
 
-export const sendNotification = async (notificationData) => {
-  const response = await axios.post('/api/notifications', notificationData, {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`
+  updateUserProfile: async (id, userData) => {
+    try {
+      const response = await api.put(`/users/${id}`, userData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      throw error;
     }
-  });
-  return response.data;
+  },
+
+  searchUsers: async (query) => {
+    try {
+      const response = await api.get(`/users/search?q=${query}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error searching users:', error);
+      return { status: 'error', data: [] };
+    }
+  }
 };
 
-export default api; 
+// Statistics services
+export const statisticsService = {
+  getDashboardStats: async () => {
+    try {
+      const response = await api.get('/statistics/dashboard');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      return { 
+        status: 'error', 
+        data: {
+          totalUsers: 0,
+          totalSessions: 0,
+          activeSessions: 0,
+          totalAlumni: 0
+        }
+      };
+    }
+  }
+};
+
+// Add this to your existing api.js file, before export default api;
+
+// Submission services
+export const submissionService = {
+  getAllSubmissions: async () => {
+    try {
+      const response = await api.get('/submissions');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching submissions:', error);
+      throw error;
+    }
+  },
+
+  createSubmission: async (submissionData) => {
+    try {
+      const response = await api.post('/submissions', submissionData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating submission:', error);
+      throw error;
+    }
+  },
+
+  updateSubmission: async (id, submissionData) => {
+    try {
+      const response = await api.put(`/submissions/${id}`, submissionData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating submission:', error);
+      throw error;
+    }
+  },
+
+  deleteSubmission: async (id) => {
+    try {
+      const response = await api.delete(`/submissions/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting submission:', error);
+      throw error;
+    }
+  }
+};
+
+export default api;

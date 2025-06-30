@@ -1,18 +1,47 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import Profile from '../components/Profile';
+import { useAuth } from '../context/AuthContext';
+import { authService } from '../services/api';
 
 const StudentProfile = () => {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    fetchCurrentUserData();
+  }, []);
+
+  const fetchCurrentUserData = async () => {
+    try {
+      // Try to get fresh data from API
+      const response = await authService.getCurrentUser();
+      if (response.status === 'success') {
+        setCurrentUser(response.data.user);
+      } else {
+        // Fallback to context user
+        setCurrentUser(user);
+      }
+    } catch (error) {
+      console.log('Using context user data');
+      setCurrentUser(user);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Use actual logged-in user data instead of hardcoded data
   const studentData = {
-    profileImage: 'src/assets/profile1.jpg',
-    fullName: 'Vinay Repalle',
-    username: 'vinayrepalle',
-    id: 'N201234',
-    mailId: 'vinayrepalle@gmail.com',
-    phoneNumber: '+32112345689',
-    department: 'CSE',
-    yearOfStudy: 'E3',
+    profileImage: currentUser?.profilePhoto || 'src/assets/profile1.jpg',
+    fullName: currentUser?.fullName || 'Not available',
+    username: currentUser?.email?.split('@')[0] || 'username',
+    id: currentUser?.studentId || 'Not available',
+    mailId: currentUser?.email || 'Not available',
+    phoneNumber: currentUser?.phoneNumber || 'Not available',
+    department: currentUser?.department || 'Not available',
+    yearOfStudy: currentUser?.yearOfStudy || 'Not available',
   };
 
   const overviewFields = [
@@ -30,7 +59,7 @@ const StudentProfile = () => {
       name: 'yearOfStudy',
       label: 'Year of Study',
       type: 'select',
-      options: ['E1', 'E2', 'E3', 'E4'],
+      options: ['E-1', 'E-2', 'E-3', 'E-4'],
     },
   ];
 
@@ -38,6 +67,21 @@ const StudentProfile = () => {
     console.log('Updated Student Data:', updatedData);
     // Save the updated data (e.g., send it to a backend API)
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-100">
+        <Header />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600"></div>
+            <p className="mt-4 text-gray-600">Loading your profile...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
