@@ -1,29 +1,42 @@
 const express = require('express');
 const router = express.Router();
-const Submission = require('../models/Submission');
-const { authMiddleware } = require('../middleware/auth');
 
-// Middleware to check if student is E-3 or E-4
-const checkEligibility = (req, res, next) => {
-  const { yearOfStudy } = req.user;
-  if (yearOfStudy !== 'E-3' && yearOfStudy !== 'E-4') {
-    return res.status(403).json({
+console.log('📋 Submissions routes file loaded');
+
+// Simple test route (no auth needed)
+router.get('/test', (req, res) => {
+  console.log('✅ Test route hit');
+  res.json({
+    status: 'success',
+    message: 'Submissions route is working!',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Test route with database
+router.get('/db-test', async (req, res) => {
+  try {
+    const Submission = require('../models/Submission');
+    const count = await Submission.countDocuments();
+    res.json({
+      status: 'success',
+      message: 'Database connection working',
+      totalSubmissions: count
+    });
+  } catch (error) {
+    res.json({
       status: 'error',
-      message: 'Only E-3 and E-4 students can submit forms'
+      message: 'Database connection failed',
+      error: error.message
     });
   }
-  next();
-};
+});
 
-// Get all submissions for the current student
-router.get('/', authMiddleware, async (req, res) => {
+// Simple get all (no auth for testing)
+router.get('/all', async (req, res) => {
   try {
-    const studentId = req.user.studentId || req.user.id;
-    
-    const submissions = await Submission.find({ studentId })
-      .sort({ submittedAt: -1 }) // Most recent first
-      .lean();
-
+    const Submission = require('../models/Submission');
+    const submissions = await Submission.find().sort({ submittedAt: -1 });
     res.json({
       status: 'success',
       data: {
@@ -32,89 +45,59 @@ router.get('/', authMiddleware, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching submissions:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Failed to fetch submissions'
+      message: error.message
     });
   }
 });
 
-// Create new submission
-router.post('/', authMiddleware, checkEligibility, async (req, res) => {
+// Simple create (no auth for testing)
+router.post('/create', async (req, res) => {
   try {
-    const { title, description, category, additionalInfo } = req.body;
+    console.log('Creating submission:', req.body);
     
-    // Validate required fields
+    const Submission = require('../models/Submission');
+    const { title, description, category } = req.body;
+    
     if (!title || !description || !category) {
       return res.status(400).json({
         status: 'error',
-        message: 'Title, description, and category are required'
+        message: 'Title, description, and category required'
       });
     }
-
-    // Create submission with user data
+    
     const submissionData = {
-      title: title.trim(),
-      description: description.trim(),
+      title,
+      description,
       category,
-      additionalInfo: additionalInfo?.trim() || '',
-      studentId: req.user.studentId || req.user.id,
-      studentName: req.user.fullName,
-      department: req.user.department,
-      yearOfStudy: req.user.yearOfStudy
+      additionalInfo: req.body.additionalInfo || '',
+      studentId: 'test-student-id',
+      studentName: 'Test Student',
+      department: 'Test Department',
+      yearOfStudy: 'E-4',
+      status: 'pending'
     };
-
+    
     const submission = new Submission(submissionData);
-    await submission.save();
-
+    const saved = await submission.save();
+    
+    console.log('Submission saved:', saved._id);
+    
     res.status(201).json({
       status: 'success',
-      message: 'Submission created successfully',
-      data: {
-        submission
-      }
+      message: 'Submission created',
+      data: { submission: saved }
     });
+    
   } catch (error) {
     console.error('Error creating submission:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Failed to create submission'
+      message: error.message
     });
   }
 });
 
-// Get specific submission by ID
-router.get('/:id', authMiddleware, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const studentId = req.user.studentId || req.user.id;
-
-    const submission = await Submission.findOne({ 
-      _id: id, 
-      studentId 
-    });
-
-    if (!submission) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'Submission not found'
-      });
-    }
-
-    res.json({
-      status: 'success',
-      data: {
-        submission
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching submission:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch submission'
-    });
-  }
-});
-
+console.log('📋 Submissions routes configured');
 module.exports = router;

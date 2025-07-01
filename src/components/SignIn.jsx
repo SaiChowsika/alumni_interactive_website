@@ -87,69 +87,72 @@ const SignIn = () => {
   };
 
   const handleSignIn = async (e) => {
-    e.preventDefault();
-    setError('');
+  e.preventDefault();
+  setError('');
 
-    try {
-      // Validate form data
-      if (!formData.email || !formData.password) {
-        setError('Please fill in all fields');
-        return;
-      }
-
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email)) {
-        setError('Please enter a valid email address');
-        return;
-      }
-
-      // Validate password length
-      if (formData.password.length < 6) {
-        setError('Password must be at least 6 characters long');
-        return;
-      }
-
-      // Call the login API
-      const response = await authService.login({
-        email: formData.email.trim(),
-        password: formData.password
-      });
-      
-      if (response.status === 'success' && response.token) {
-        // Store the token and user data
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        
-        // Update auth context
-        login(response.data.user);
-        
-        setShowAlert(true);
-
-        // Get the role-specific dashboard route
-        const dashboardRoutes = {
-          admin: '/admin',
-          student: '/student',
-          alumni: '/alumni',
-          faculty: '/faculty'
-        };
-
-        // If coming from a specific protected route (not landing page), use that route
-        // Otherwise, use the role-specific dashboard
-        const targetRoute = from === '/' ? dashboardRoutes[response.data.user.role] : from;
-        
-        // Redirect after successful login
-        setTimeout(() => {
-          navigate(targetRoute);
-        }, 1500);
-      } else {
-        setError('Invalid response from server');
-      }
-    } catch (err) {
-      console.error('Login error:', err);
-      setError(err.response?.data?.message || 'An error occurred during login. Please try again.');
+  try {
+    // Validate form data
+    if (!formData.email || !formData.password) {
+      setError('Please fill in all fields');
+      return;
     }
-  };
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    // Validate password length
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+
+    console.log('Attempting login with:', { email: formData.email });
+
+    // Call the login API
+    const response = await authService.login({
+      email: formData.email.trim(),
+      password: formData.password
+    });
+
+    console.log('Login response:', response);
+
+    if (response.status === 'success' && response.token) {
+      // Store the token and user data
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+
+      // Update auth context
+      login(response.data.user);
+      setShowAlert(true);
+
+      // Get the role-specific dashboard route
+      const dashboardRoutes = {
+        admin: '/admin',
+        student: '/student',
+        alumni: '/alumni',
+        faculty: '/faculty'
+      };
+
+      const targetRoute = from === '/' ? dashboardRoutes[response.data.user.role] : from;
+
+      // Redirect after successful login
+      setTimeout(() => {
+        navigate(targetRoute);
+      }, 1500);
+
+    } else {
+      setError('Invalid response from server');
+    }
+
+  } catch (err) {
+    console.error('Login error:', err);
+    setError(err.message || 'An error occurred during login. Please try again.');
+  }
+};
 
   const handleGoogleSignIn = async () => {
     // TODO: Implement Google Sign In

@@ -1,27 +1,26 @@
 import React, { useState } from 'react';
+import { submissionService } from '../services/api';
 
-const SubmissionForm = ({ studentData, onSubmissionSuccess }) => {
+const SubmissionForm = ({ onSubmissionCreated, onClose }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: '',
+    category: 'Academic Project',
     additionalInfo: ''
   });
-
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
 
   const categories = [
     'Academic Project',
-    'Research Proposal',
+    'Research Proposal', 
     'Internship Application',
     'Placement Application',
     'Event Proposal',
     'Other'
   ];
 
-  const handleChange = (e) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -32,165 +31,112 @@ const SubmissionForm = ({ studentData, onSubmissionSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
-    setSuccess(false);
+    setError('');
+
+    console.log('Submitting form with data:', formData);
 
     try {
-      const submissionData = {
-        ...formData,
-        studentId: studentData.id,
-        studentName: studentData.fullName,
-        department: studentData.department,
-        yearOfStudy: studentData.yearOfStudy,
-        submittedAt: new Date().toISOString(),
-        _id: Date.now().toString() // Mock ID
-      };
-
-      // Mock success - no API call
-      setTimeout(() => {
-        setSuccess(true);
+      const response = await submissionService.createSubmission(formData);
+      console.log('Submission response:', response);
+      
+      if (response.status === 'success') {
+        alert('Submission created successfully!');
+        onSubmissionCreated && onSubmissionCreated(response.data.submission);
+        onClose && onClose();
+        
+        // Reset form
         setFormData({
           title: '',
           description: '',
-          category: '',
+          category: 'Academic Project',
           additionalInfo: ''
         });
-
-        if (onSubmissionSuccess) {
-          onSubmissionSuccess(submissionData);
-        }
-
-        setTimeout(() => setSuccess(false), 3000);
-        setLoading(false);
-      }, 1000);
-
-    } catch (error) {
-      console.error('Submission error:', error);
-      setError('Failed to submit form. Please try again.');
+      }
+    } catch (err) {
+      console.error('Submission error:', err);
+      setError(err.message || 'Failed to create submission');
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-2xl">
-      {/* Success Message */}
-      {success && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-green-800">
-                Form submitted successfully! You can submit another form below.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Error Message */}
+    <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow-lg">
+      <h2 className="text-xl font-bold mb-4">Create New Submission</h2>
+      
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-red-800">{error}</p>
-            </div>
-          </div>
+        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-            Title *
-          </label>
+          <label className="block text-sm font-medium mb-1">Title *</label>
           <input
             type="text"
-            id="title"
             name="title"
             value={formData.title}
-            onChange={handleChange}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border rounded-md"
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
-            placeholder="Enter submission title"
           />
         </div>
 
         <div>
-          <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
-            Category *
-          </label>
+          <label className="block text-sm font-medium mb-1">Category *</label>
           <select
-            id="category"
             name="category"
             value={formData.category}
-            onChange={handleChange}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border rounded-md"
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
           >
-            <option value="">Select a category</option>
-            {categories.map(category => (
-              <option key={category} value={category}>{category}</option>
+            {categories.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
             ))}
           </select>
         </div>
 
         <div>
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-            Description *
-          </label>
+          <label className="block text-sm font-medium mb-1">Description *</label>
           <textarea
-            id="description"
             name="description"
             value={formData.description}
-            onChange={handleChange}
-            required
+            onChange={handleInputChange}
             rows={4}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
-            placeholder="Provide detailed description of your submission"
+            className="w-full px-3 py-2 border rounded-md"
+            required
           />
         </div>
 
         <div>
-          <label htmlFor="additionalInfo" className="block text-sm font-medium text-gray-700 mb-2">
-            Additional Information
-          </label>
+          <label className="block text-sm font-medium mb-1">Additional Info</label>
           <textarea
-            id="additionalInfo"
             name="additionalInfo"
             value={formData.additionalInfo}
-            onChange={handleChange}
+            onChange={handleInputChange}
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
-            placeholder="Any additional information (optional)"
+            className="w-full px-3 py-2 border rounded-md"
           />
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex gap-3">
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border rounded-md hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+          )}
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
           >
-            {loading ? (
-              <div className="flex items-center">
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Submitting...
-              </div>
-            ) : (
-              'Submit Form'
-            )}
+            {loading ? 'Creating...' : 'Submit'}
           </button>
         </div>
       </form>

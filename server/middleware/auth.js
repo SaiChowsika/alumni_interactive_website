@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User'); // Adjust path as needed
+const User = require('../models/User');
 
 const authMiddleware = async (req, res, next) => {
   try {
@@ -14,8 +14,10 @@ const authMiddleware = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    // Find user and attach to request
-    const user = await User.findById(decoded.id).select('-password');
+    // Fix: Handle both possible token structures
+    const userId = decoded.userId || decoded.id;
+    const user = await User.findById(userId).select('-password');
+    
     if (!user) {
       return res.status(401).json({
         status: 'error',
@@ -26,6 +28,7 @@ const authMiddleware = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
+    console.error('Auth error:', error);
     res.status(401).json({
       status: 'error',
       message: 'Invalid token'

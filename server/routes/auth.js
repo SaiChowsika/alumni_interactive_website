@@ -238,10 +238,10 @@ router.post('/signup', async (req, res) => {
 });
 
 // LOGIN ROUTE
+// LOGIN ROUTE
 router.post('/login', async (req, res) => {
   try {
     console.log('🔑 Login attempt:', req.body.email);
-
     const { email, password } = req.body;
 
     // Validate input
@@ -253,8 +253,8 @@ router.post('/login', async (req, res) => {
     }
 
     // Find user and include password for comparison
-    const user = await User.findOne({ email, isActive: true }).select('+password');
-
+    const user = await User.findOne({ email: email.toLowerCase(), isActive: true }).select('+password');
+    
     if (!user) {
       return res.status(401).json({
         status: 'error',
@@ -264,7 +264,7 @@ router.post('/login', async (req, res) => {
 
     // Check password
     const isPasswordCorrect = await user.comparePassword(password);
-
+    
     if (!isPasswordCorrect) {
       return res.status(401).json({
         status: 'error',
@@ -274,9 +274,10 @@ router.post('/login', async (req, res) => {
 
     // Generate JWT token
     const token = generateToken(user._id, user.role);
-
+    
     console.log('✅ Login successful:', user.email, user.role);
-
+    
+    // Return consistent response structure
     res.json({
       status: 'success',
       message: 'Login successful',
