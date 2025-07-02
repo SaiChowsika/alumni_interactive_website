@@ -13,6 +13,7 @@ import FacultyProfile from './pages/FacultyProfile';
 import AdminDashboard from './pages/AdminDashboard';
 import TermsAndConditions from './pages/TermsAndConditions';
 import ProtectedRoute from './components/ProtectedRoute';
+import TestSubmissions from './pages/TestSubmissions'; 
 
 function App() {
   return (
@@ -27,7 +28,7 @@ function App() {
                 <Route path="/signin" element={<SignIn />} />
                 <Route path="/signup/student" element={<StudentSignUp />} />
                 <Route path="/terms" element={<TermsAndConditions />} />
-                
+                <Route path="/test-submissions" element={<TestSubmissions />} /> 
                 {/* Protected Routes */}
                 <Route path="/student/profile" element={
                   <ProtectedRoute allowedRoles={['student']}>

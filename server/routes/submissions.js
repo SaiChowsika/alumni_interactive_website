@@ -1,29 +1,23 @@
 const express = require('express');
 const router = express.Router();
+const Submission = require('../models/Submission');
 
 console.log('📋 Submissions routes file loaded');
 
-// Simple test route (no auth needed)
-router.get('/test', (req, res) => {
-  console.log('✅ Test route hit');
-  res.json({
-    status: 'success',
-    message: 'Submissions route is working!',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Test route with database
-router.get('/db-test', async (req, res) => {
+// Test route
+router.get('/test', async (req, res) => {
   try {
-    const Submission = require('../models/Submission');
+    console.log('✅ Test route hit');
     const count = await Submission.countDocuments();
     res.json({
       status: 'success',
-      message: 'Database connection working',
-      totalSubmissions: count
+      message: 'Submissions route is working!',
+      totalSubmissions: count,
+      database: 'Connected',
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
+    console.error('❌ Test route error:', error);
     res.json({
       status: 'error',
       message: 'Database connection failed',
@@ -32,11 +26,13 @@ router.get('/db-test', async (req, res) => {
   }
 });
 
-// Simple get all (no auth for testing)
+// Get all submissions
 router.get('/all', async (req, res) => {
   try {
-    const Submission = require('../models/Submission');
+    console.log('📋 Getting all submissions...');
     const submissions = await Submission.find().sort({ submittedAt: -1 });
+    console.log(`📋 Found ${submissions.length} submissions`);
+    
     res.json({
       status: 'success',
       data: {
@@ -45,6 +41,7 @@ router.get('/all', async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('❌ Error getting submissions:', error);
     res.status(500).json({
       status: 'error',
       message: error.message
@@ -52,46 +49,77 @@ router.get('/all', async (req, res) => {
   }
 });
 
-// Simple create (no auth for testing)
+// Create submission
 router.post('/create', async (req, res) => {
   try {
-    console.log('Creating submission:', req.body);
+    console.log('📋 Creating submission with data:', req.body);
     
-    const Submission = require('../models/Submission');
-    const { title, description, category } = req.body;
+    const { title, description, category, additionalInfo } = req.body;
     
+    // Validate required fields
     if (!title || !description || !category) {
+      console.log('❌ Missing required fields');
       return res.status(400).json({
         status: 'error',
-        message: 'Title, description, and category required'
+        message: 'Title, description, and category are required'
       });
     }
     
+    // Create submission data
     const submissionData = {
-      title,
-      description,
+      title: title.trim(),
+      description: description.trim(),
       category,
-      additionalInfo: req.body.additionalInfo || '',
-      studentId: 'test-student-id',
+      additionalInfo: additionalInfo ? additionalInfo.trim() : '',
+      studentId: 'student-' + Date.now(),
       studentName: 'Test Student',
-      department: 'Test Department',
+      department: 'Computer Science',
       yearOfStudy: 'E-4',
       status: 'pending'
     };
     
-    const submission = new Submission(submissionData);
-    const saved = await submission.save();
+    console.log('📋 Submission data to save:', submissionData);
     
-    console.log('Submission saved:', saved._id);
+    // Create and save submission
+    const submission = new Submission(submissionData);
+    const savedSubmission = await submission.save();
+    
+    console.log('✅ Submission saved successfully:', savedSubmission._id);
     
     res.status(201).json({
       status: 'success',
-      message: 'Submission created',
-      data: { submission: saved }
+      message: 'Submission created successfully',
+      data: {
+        submission: savedSubmission
+      }
     });
     
   } catch (error) {
-    console.error('Error creating submission:', error);
+    console.error('❌ Error creating submission:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to create submission: ' + error.message
+    });
+  }
+});
+
+// Get submission by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const submission = await Submission.findById(req.params.id);
+    if (!submission) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Submission not found'
+      });
+    }
+    
+    res.json({
+      status: 'success',
+      data: { submission }
+    });
+  } catch (error) {
+    console.error('❌ Error getting submission:', error);
     res.status(500).json({
       status: 'error',
       message: error.message

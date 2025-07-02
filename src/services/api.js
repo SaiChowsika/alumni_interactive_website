@@ -60,17 +60,16 @@ export const sessionService = {
 };
 
 // Submission service
+// Submission service - FIXED
 export const submissionService = {
-  getSubmissions: () => api.get('/submissions'),
-  createSubmission: (data) => api.post('/submissions', data),
   getSubmissions: () => {
     console.log('Fetching submissions...');
-    return api.get('/submissions');
+    return api.get('/submissions/all'); // Changed from /submissions to /submissions/all
   },
   
   createSubmission: (data) => {
     console.log('Creating submission with data:', data);
-    return api.post('/submissions', data);
+    return api.post('/submissions/create', data); // Changed from /submissions to /submissions/create
   },
   
   getSubmissionById: (id) => api.get(`/submissions/${id}`),
